@@ -101,8 +101,3 @@ class MockPredict(sl.Task):
 class MockAssessCrossVal(sl.Task):
     def run(self):
         time.sleep(0.1)
-
-# ====================================================================================================
-
-if __name__ == '__main__':
-    sl.run_locally()

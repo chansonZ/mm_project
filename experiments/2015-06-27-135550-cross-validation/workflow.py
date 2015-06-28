@@ -15,8 +15,8 @@ class CrossValidate(sl.WorkflowTask):
     # PARAMETERS
     folds_count = luigi.IntParameter()
 
-    def complete(self):
-        return False
+    #def complete(self):
+    #    return False
 
     def workflow(self):
         # Hard-code this for now ...
