@@ -18,8 +18,8 @@ class CrossValRawData(sl.ExternalTask):
 class CreateFolds(sl.Task):
 
     # TASK PARAMETERS
-    folds_count = luigi.Parameter()
-    fold_index = luigi.Parameter()
+    folds_count = luigi.IntParameter()
+    fold_index = luigi.IntParameter()
     seed = luigi.Parameter()
 
     # TARGETS
@@ -32,8 +32,8 @@ class CreateFolds(sl.Task):
 
     # CONVENIENCE METHODS
     def count_lines(self, filename):
-        output = sub.check_output('wc -l %s' % filename, shell=True)
-        return int(output.split(' ')[0])
+        out = sub.check_output('wc -l %s' % filename, shell=True)
+        return int(out.split(' ')[0])
 
     def remove_dict_key(self, orig_dict, key):
         new_dict = dict(orig_dict)
@@ -66,7 +66,7 @@ class CreateFolds(sl.Task):
         # Write train file
         train_splits_linenos = self.remove_dict_key(splits_as_linenos, self.fold_index)
         train_linenos = []
-        for k, v in splits_as_linenos.iteritems():
+        for k, v in train_splits_linenos.iteritems():
             train_linenos.extend(v)
         with self.in_dataset().open() as infile, self.out_traindata().open('w') as trainfile:
             for lineno, line in enumerate(infile):
@@ -79,7 +79,7 @@ class CreateFolds(sl.Task):
 class MergeTrainFolds(sl.Task):
 
     def run(self):
-        time.sleep(1)
+        time.sleep(0.1)
 
 # ====================================================================================================
 
@@ -88,19 +88,19 @@ class MockTrain(sl.Task):
     in_traindata = None
 
     def run(self):
-        time.sleep(1)
+        time.sleep(0.1)
 
 # ====================================================================================================
 
 class MockPredict(sl.Task):
     def run(self):
-        time.sleep(1)
+        time.sleep(0.1)
 
 # ====================================================================================================
 
 class MockAssessCrossVal(sl.Task):
     def run(self):
-        time.sleep(1)
+        time.sleep(0.1)
 
 # ====================================================================================================
 
