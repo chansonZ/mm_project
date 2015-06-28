@@ -12,16 +12,18 @@ class CrossValidate(sl.WorkflowTask):
     For now, a sketch on how to implement Cross-Validation as a sub-workflow components
     '''
 
-    # TARGETS
-    rawdata = sl.new_task(CrossValRawData, 'rawdata', self)
 
     # PARAMETERS
+    task = luigi.Parameter()
     folds_count = luigi.IntParameter()
 
     def workflow(self):
+        # Hard-code this for now ...
+        rawdata = sl.new_task(CrossValRawData, 'rawdata', self, file_name='crossval_rawdata.txt')
+
         # Create the initial component that splits the initial dataset into
         # k equal splits, or folds ...
-        split = sl.new_task(CrossValSplitByLines, 'split', self, folds_count = self.folds_count)
+        split = sl.new_task(CrossValSplitByLines, 'split', self, splits_count = self.folds_count)
         split.in_dataset = rawdata.out_dataset
 
         # Branch the workflow into one branch per fold
@@ -53,12 +55,9 @@ class CrossValidate(sl.WorkflowTask):
         assess = sl.new_task(MockAssessCrossVal, 'assess', self, folds_count=self.folds_count)
         assess.in_predict_targets = predict_targets
 
-        return assess
+        return locals()[self.task]
 
+# ====================================================================================================
 
-    def output(self):
-        return self.input()
-
-
-    def run(self):
-        pass # Don't do anything ... everything happens in the requires() method
+if __name__ == '__main__':
+    sl.run_locally()
