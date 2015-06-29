@@ -87,6 +87,9 @@ class MockTrain(sl.Task):
 
     in_traindata = None
 
+    def out_svmmodel(self):
+        return sl.TargetInfo(self, self.in_traindata().path + '.model')
+
     def run(self):
         time.sleep(0.1)
 
