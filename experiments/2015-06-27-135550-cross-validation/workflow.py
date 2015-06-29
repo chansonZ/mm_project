@@ -34,18 +34,20 @@ class CrossValidate(sl.WorkflowTask):
             create_folds.in_dataset = rawdata.out_dataset
 
             # Plugging in the 'generic' train components, for SVM/LibLinear, here
-            train = sl.new_task(MockTrain, 'train_svm', self)
-            train.in_traindata = create_folds.out_traindata
+            #train = sl.new_task(MockTrain, 'train_svm', self)
+            #train.in_traindata = create_folds.out_traindata
 
-            # Plugging in the 'generic' predict components, for SVM/LibLinear, here
-            predict = sl.new_task(MockPredict, 'predict', self)
-            predict.in_testdata = create_folds.out_testdata
-            predict.in_svmmodel = train
+            #train = MockTrain()
+
+            ## Plugging in the 'generic' predict components, for SVM/LibLinear, here
+            #predict = sl.new_task(MockPredict, 'predict', self)
+            #predict.in_testdata = create_folds.out_testdata
+            #predict.in_svmmodel = train.out_svmmodel
 
             fold_tasks[fold_idx] = {}
             fold_tasks[fold_idx]['create_folds'] = create_folds
-            fold_tasks[fold_idx]['train'] = train
-            fold_tasks[fold_idx]['predict'] = predict
+            #fold_tasks[fold_idx]['train'] = train
+            #fold_tasks[fold_idx]['predict'] = predict
 
         # Collect the prediction targets from the branches above, into one dict, to feed
         # into the specialized assess component below
