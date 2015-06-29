@@ -45,7 +45,7 @@ class CreateFolds(sl.Task):
 
     def run(self):
         linecnt = self.count_lines(self.in_dataset().path)
-        line_nos = [i for i in xrange(1, linecnt)]
+        line_nos = [i for i in xrange(linecnt)]
         random.shuffle(line_nos, lambda: self.seed)
 
         splits_as_linenos = {}
