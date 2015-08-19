@@ -15,25 +15,33 @@ class CrossValidate(sl.WorkflowTask):
 
     # PARAMETERS
     folds_count = luigi.IntParameter()
+    replicate_id = luigi.Parameter()
 
     #def complete(self):
     #    return False
 
     def workflow(self):
+        # Existing smiles data
+        mmtestdata = self.new_task('mmtestdata', ExistingSmiles, dataset_name='mm_test', replicate_id=self.replicate_id)
+
+        createrepl = self.new_task('createrepl', CreateReplicateCopy, replicate_id=self.replicate_id)
+        createrepl.in_file = mmtestdata.out_smiles
+
+
         # Hard-code this for now ...
-        rawdata = self.new_task('rawdata', CrossValRawData, file_name='raw/mm_test.smiles')
+        # rawdata = self.new_task('rawdata', CrossValRawData, file_name='raw/mm_test.smiles')
 
         # Branch the workflow into one branch per fold
         fold_tasks = {}
         for fold_idx in xrange(self.folds_count):
 
             # Task: create_folds
-            create_folds = sl.new_task(CreateFolds, 'create_fold_%d' % fold_idx, self,
+            create_folds = self.new_task('create_fold_%d' % fold_idx, CreateFolds,
                     fold_index = fold_idx,
                     folds_count = self.folds_count,
                     seed = 0.637)
 
-            create_folds.in_dataset = rawdata.out_dataset
+            create_folds.in_dataset = createrepl.out_copy
 
             #TODO:
             # - Add "existing data" task for mm_test.smiles
