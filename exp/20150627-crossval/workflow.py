@@ -1,4 +1,5 @@
 from crossval import *
+from mmcomp import *
 import luigi
 import sciluigi as sl
 import time
