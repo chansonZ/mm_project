@@ -20,18 +20,37 @@ class CrossValidate(sl.WorkflowTask):
 
     def workflow(self):
         # Hard-code this for now ...
-        rawdata = sl.new_task(CrossValRawData, 'rawdata', self, file_name='crossval_rawdata.txt')
+        rawdata = self.new_task('rawdata', CrossValRawData, file_name='raw/mm_test.smiles')
 
         # Branch the workflow into one branch per fold
         fold_tasks = {}
         for fold_idx in xrange(self.folds_count):
 
+            # Task: create_folds
             create_folds = sl.new_task(CreateFolds, 'create_fold_%d' % fold_idx, self,
                     fold_index = fold_idx,
                     folds_count = self.folds_count,
                     seed = 0.637)
 
             create_folds.in_dataset = rawdata.out_dataset
+
+            #TODO:
+            # - Add "existing data" task for mm_test.smiles
+            # - Convert existing MM tasks to new API?
+            # - Replicate the preprocessing chain from the previous MM
+
+            # Task names
+            # - ExistingSmiles
+            # - GenerateSignaturesFilterSubstances
+            # - GenerateUniqueSignaturesCopy
+            # - SampleTrainAndTest
+            # - CreateSparseTrainDataset
+            # - CreateSparseTestDataset
+            # - TrainLinearModel
+            # - PredictLinearModel
+            # - AssessLinearRegression
+            # - CreateReport
+
 
             # Plugging in the 'generic' train components, for SVM/LibLinear, here
             #train = sl.new_task(MockTrain, 'train_svm', self)
