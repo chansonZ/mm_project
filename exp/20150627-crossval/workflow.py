@@ -26,11 +26,11 @@ class CrossValidate(sl.WorkflowTask):
         gensign = self.new_task('gensign', GenerateSignaturesFilterSubstances,
                 replicate_id=self.replicate_id,
                 min_height = self.min_height,
-                max_ehgith = self.max_height)
+                max_height = self.max_height)
 
         # Connect tasks
-        replcopy.in_file = mmtestdata.out_smiles
-        gensign.in_smiles = replcopy.out_copy
+        gensign.in_smiles = mmtestdata.out_smiles
+        replcopy.in_file = gensign.out_signatures
 
         # Branch the workflow into one branch per fold
         fold_tasks = {}
