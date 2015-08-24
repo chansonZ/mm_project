@@ -21,8 +21,11 @@ class CrossValidate(sl.WorkflowTask):
 
     def workflow(self):
         # Initialize tasks
-        mmtestdata = self.new_task('mmtestdata', ExistingSmiles, dataset_name='mm_test', replicate_id=self.replicate_id)
-        replcopy = self.new_task('replcopy', CreateReplicateCopy, replicate_id=self.replicate_id)
+        mmtestdata = self.new_task('mmtestdata', ExistingSmiles,
+                replicate_id=self.replicate_id,
+                dataset_name='mm_test')
+        replcopy = self.new_task('replcopy', CreateReplicateCopy,
+                replicate_id=self.replicate_id)
         gensign = self.new_task('gensign', GenerateSignaturesFilterSubstances,
                 replicate_id=self.replicate_id,
                 min_height = self.min_height,
