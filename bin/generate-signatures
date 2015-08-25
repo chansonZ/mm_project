@@ -1,2 +1,8 @@
 #!/bin/bash
-/sw/comp/java/x86_64/sun_jdk1.7.0_25/bin/java -jar GenerateSignatures.jar
+# Get directory path of current directory
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
+# Run the command, forwarding all parameters
+/sw/comp/java/x86_64/sun_jdk1.7.0_25/bin/java \
+    -jar $DIR/GenerateSignatures.jar \
+    "$@"
