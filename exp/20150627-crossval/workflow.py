@@ -100,4 +100,4 @@ class CrossValidate(sl.WorkflowTask):
 # ====================================================================================================
 
 if __name__ == '__main__':
-    sl.run_locally()
+    sl.run_local()
