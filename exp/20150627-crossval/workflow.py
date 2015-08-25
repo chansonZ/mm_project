@@ -23,23 +23,22 @@ class CrossValidate(sl.WorkflowTask):
         # Initialize tasks
         mmtestdata = self.new_task('mmtestdata', ExistingSmiles,
                 replicate_id=self.replicate_id,
-                dataset_name='mm_test')
-        replcopy = self.new_task('replcopy', CreateReplicateCopy,
-                replicate_id=self.replicate_id)
+                dataset_name='mm_test_small')
         gensign = self.new_task('gensign', GenerateSignaturesFilterSubstances,
                 replicate_id=self.replicate_id,
                 min_height = self.min_height,
                 max_height = self.max_height,
-                java_path = '/sw/comp/java/x86_64/sun_jdk1.7.0_25/bin/java',
                 slurminfo = sl.SlurmInfo(
-                    runmode=sl.RUNMODE_LOCAL, # For debugging
+                    runmode=sl.RUNMODE_HPC, # For debugging
                     project='b2013262',
-                    partition='core',
-                    cores='8',
-                    time='4:00:00',
-                    jobname='MMGenSign',
-                    threads='8'
+                    partition='devcore',
+                    cores='2',
+                    time='15:00',
+                    jobname='MMGenSignTest',
+                    threads='2'
                 ))
+        replcopy = self.new_task('replcopy', CreateReplicateCopy,
+                replicate_id=self.replicate_id)
 
         # Connect tasks
         gensign.in_smiles = mmtestdata.out_smiles
