@@ -54,12 +54,23 @@ class CrossValidate(sl.WorkflowTask):
                     jobname='MMSampleTrainTest',
                     threads='2'
                 ))
+        sprstrain = self.new_task('sparsetrain', CreateSparseTrainDataset,
+                replicate_id=self.replicate_id,
+                slurminfo = sl.SlurmInfo(
+                    runmode=sl.RUNMODE_HPC, # For debugging
+                    project='b2013262',
+                    partition='devcore',
+                    cores='2',
+                    time='15:00',
+                    jobname='MMSampleTrainTest',
+                    threads='2'
+                ))
 
         # Connect tasks
         gensign.in_smiles = mmtestdata.out_smiles
         replcopy.in_file = gensign.out_signatures
         samplett.in_signatures = replcopy.out_copy
-
+        sprstrain.in_traindata = samplett.out_traindata
 
         # Branch the workflow into one branch per fold
         fold_tasks = {}
@@ -71,7 +82,7 @@ class CrossValidate(sl.WorkflowTask):
                     seed = 0.637)
 
             # Connect tasks
-            create_folds.in_dataset = samplett.out_traindata
+            create_folds.in_dataset = sprstrain.out_sparsetraindata
 
             #TODO:
             # - Convert existing MM tasks to new API?
@@ -82,7 +93,7 @@ class CrossValidate(sl.WorkflowTask):
             # - [x] GenerateSignaturesFilterSubstances
             # - [x] CreateReplicateCopy
             # - [x] SampleTrainAndTest
-            # - [ ] CreateSparseTrainDataset
+            # - [x] CreateSparseTrainDataset
             # - [ ] CreateSparseTestDataset
             # - [ ] TrainLinearModel
             # - [ ] PredictLinearModel
