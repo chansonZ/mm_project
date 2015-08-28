@@ -88,7 +88,7 @@ class CrossValidate(sl.WorkflowTask):
                         fold_index = fold_idx,
                         folds_count = self.folds_count,
                         seed = 0.637)
-                train_linear = self.new_task('trainlin_fold_%d' % fold_idx, TrainLinearModel,
+                train_linear = self.new_task('trainlin_fold_%d_cost_%s' % (fold_idx, cost), TrainLinearModel,
                         replicate_id = self.replicate_id,
                         lin_type = '0', # 0 = Regression
                         lin_cost = cost,
@@ -96,11 +96,11 @@ class CrossValidate(sl.WorkflowTask):
                         slurminfo = sl.SlurmInfo(
                             runmode=sl.RUNMODE_HPC, # For debugging
                             project='b2013262',
-                            partition='devcore',
-                            cores='2',
+                            partition='core',
+                            cores='1',
                             time='15:00',
-                            jobname='MMTrainLinTest',
-                            threads='2'
+                            jobname='trnlin_f%02d_c%010d' % (fold_idx, int(cost)),
+                            threads='1'
                         ))
 
                 # Connect tasks
