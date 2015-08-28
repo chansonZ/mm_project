@@ -68,7 +68,6 @@ class CrossValidate(sl.WorkflowTask):
                     threads='2'
                 ))
         gunzip = self.new_task('gunzip_sparsetrain', UnGzipFile)
-        # !!!FIXME: MUST UNGZIP THE SPARSE TRAIN DATASET BEFORE MAKING FOLDS OF IT!!!
 
         # Connect tasks by their inports and outports
         gensign.in_smiles = mmtestdata.out_smiles
@@ -111,7 +110,8 @@ class CrossValidate(sl.WorkflowTask):
                 tasks[cost][fold_idx]['create_folds'] = create_folds
                 tasks[cost][fold_idx]['train_linear'] = train_linear
 
-        return_tasks = [tasks[cost][fold_idx]['train_linear'] for cost, fold_idx in zip(costseq, xrange(self.folds_count))]
+        return_tasks = [tasks[cost][fold_idx]['train_linear'] for cost in costseq for fold_idx in xrange(self.folds_count)]
+        #return_tasks = [tasks[cost][fold_idx] for fold_idx in xrange(self.folds_count)]
         return return_tasks
 
 # ====================================================================================================
