@@ -25,7 +25,7 @@ class CreateFolds(sl.Task):
     # TARGETS
     in_dataset = None
     def out_traindata(self):
-        return sl.TargetInfo(self, self.in_dataset().path + '.fold{0:02}_train'.format(self.fold_index))
+        return sl.TargetInfo(self, self.in_dataset().path + '.fld{0:02}_trn'.format(self.fold_index))
 
     def out_testdata(self):
         if self.in_dataset is None:
@@ -33,7 +33,7 @@ class CreateFolds(sl.Task):
         elif self.in_dataset() is None:
             raise Exception("in_dataset returns None")
         else:
-            return sl.TargetInfo(self, self.in_dataset().path + '.fold{0:02}_test'.format(self.fold_index))
+            return sl.TargetInfo(self, self.in_dataset().path + '.fld{0:02}_tst'.format(self.fold_index))
 
     # CONVENIENCE METHODS
     def count_lines(self, filename):
