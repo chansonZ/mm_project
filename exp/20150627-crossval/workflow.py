@@ -9,6 +9,7 @@ import time
 # ====================================================================================================
 
 class CrossValidate(sl.WorkflowTask):
+    task = luigi.Parameter()
     '''
     For now, a sketch on how to implement Cross-Validation as a sub-workflow components
     '''
@@ -123,11 +124,10 @@ class CrossValidate(sl.WorkflowTask):
                 tasks[cost][fold_idx]['train_linear'] = train_lin
                 tasks[cost][fold_idx]['predict_linear'] = pred_lin
 
-        return_tasks = [tasks[cost][fold_idx]['predict_linear'] for cost in costseq for fold_idx in xrange(self.folds_count)]
-        #return_tasks = [tasks[cost][fold_idx]['create_folds'] for fold_idx in xrange(self.folds_count)]
+        return_tasks = [tasks[cost][fold_idx][self.task] for cost in costseq for fold_idx in xrange(self.folds_count)]
         return return_tasks
 
 # ====================================================================================================
 
 if __name__ == '__main__':
-    sl.run_local()
+    sl.run_local(main_task_cls=CrossValidate)
