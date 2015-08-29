@@ -87,13 +87,12 @@ class CrossValidate(sl.WorkflowTask):
                         fold_index = fold_idx,
                         folds_count = self.folds_count,
                         seed = 0.637)
-                train_linear = self.new_task('trainlin_fold_%d_cost_%s' % (fold_idx, cost), TrainLinearModel,
+                train_lin = self.new_task('trainlin_fold_%d_cost_%s' % (fold_idx, cost), TrainLinearModel,
                         replicate_id = self.replicate_id,
                         lin_type = '0', # 0 = Regression
                         lin_cost = cost,
-                        train_dataset_gzipped=False,
                         slurminfo = sl.SlurmInfo(
-                            runmode=sl.RUNMODE_HPC, # For debugging
+                            runmode=sl.RUNMODE_LOCAL, # For debugging
                             project='b2013262',
                             partition='core',
                             cores='1',
@@ -101,57 +100,34 @@ class CrossValidate(sl.WorkflowTask):
                             jobname='trnlin_f%02d_c%010d' % (fold_idx, int(cost)),
                             threads='1'
                         ))
+                pred_lin = self.new_task('predlin_fold_%d_cost_%s' % (fold_idx, cost), PredictLinearModel,
+                        replicate_id = self.replicate_id,
+                        slurminfo = sl.SlurmInfo(
+                            runmode=sl.RUNMODE_LOCAL, # For debugging
+                            project='b2013262',
+                            partition='core',
+                            cores='1',
+                            time='15:00',
+                            jobname='predlin_f%02d_c%010d' % (fold_idx, int(cost)),
+                            threads='1'
+                        ))
 
                 # Connect tasks
                 create_folds.in_dataset = gunzip.out_ungzipped
-                train_linear.in_train_dataset = create_folds.out_traindata
+                train_lin.in_traindata = create_folds.out_traindata
+                pred_lin.in_linmodel = train_lin.out_linmodel
+                pred_lin.in_sparse_testdata = create_folds.out_testdata
 
                 tasks[cost][fold_idx] = {}
                 tasks[cost][fold_idx]['create_folds'] = create_folds
-                tasks[cost][fold_idx]['train_linear'] = train_linear
+                tasks[cost][fold_idx]['train_linear'] = train_lin
+                tasks[cost][fold_idx]['predict_linear'] = pred_lin
 
-        return_tasks = [tasks[cost][fold_idx]['train_linear'] for cost in costseq for fold_idx in xrange(self.folds_count)]
-        #return_tasks = [tasks[cost][fold_idx] for fold_idx in xrange(self.folds_count)]
+        return_tasks = [tasks[cost][fold_idx]['predict_linear'] for cost in costseq for fold_idx in xrange(self.folds_count)]
+        #return_tasks = [tasks[cost][fold_idx]['create_folds'] for fold_idx in xrange(self.folds_count)]
         return return_tasks
 
 # ====================================================================================================
 
 if __name__ == '__main__':
     sl.run_local()
-
-
-                #TODO:
-                # - Convert existing MM tasks to new API?
-                # - Replicate the preprocessing chain from the previous MM
-
-                # Task names
-                # - [x] ExistingSmiles
-                # - [x] GenerateSignaturesFilterSubstances
-                # - [x] CreateReplicateCopy
-                # - [x] SampleTrainAndTest
-                # - [x] CreateSparseTrainDataset
-                # - [ ] CreateSparseTestDataset
-                # - [ ] TrainLinearModel
-                # - [ ] PredictLinearModel
-                # - [ ] AssessLinearRegression
-                # - [ ] CreateReport
-
-                # Plugging in the 'generic' train components, for SVM/LibLinear, here
-                #train = sl.new_task(MockTrain, 'train_svm', self)
-                #train.in_traindata = create_folds.out_traindata
-
-                #train = MockTrain()
-
-                ## Plugging in the 'generic' predict components, for SVM/LibLinear, here
-                #predict = sl.new_task(MockPredict, 'predict', self)
-                #predict.in_testdata = create_folds.out_testdata
-                #predict.in_svmmodel = train.out_svmmodel
-
-                #fold_tasks[fold_idx]['train'] = train
-                #fold_tasks[fold_idx]['predict'] = predict
-
-        # Collect the prediction targets from the branches above, into one dict, to feed
-        # into the specialized assess component below
-        #predict_targets = { i : fold_tasks[fold_idx]['predict'] for i in xrange(self.folds_count) }
-        #assess = sl.new_task(MockAssessCrossVal, 'assess', self, folds_count=self.folds_count)
-        #assess.in_predict_targets = predict_targets
