@@ -15,7 +15,7 @@ class CrossValRawData(sl.ExternalTask):
 
 # ====================================================================================================
 
-class CreateFolds(sl.Task):
+class CreateFolds(sl.SlurmTask):
 
     # TASK PARAMETERS
     folds_count = luigi.IntParameter()
