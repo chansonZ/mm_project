@@ -7,7 +7,7 @@ projbin=$DIR/../../bin
 export PATH=$projbin:$PATH
 
 python workflow.py\
-    --task predict_linear\
+    --task assess_linear\
     --folds-count 10\
     --min-height 1\
     --max-height 3\

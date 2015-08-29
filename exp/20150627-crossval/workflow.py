@@ -112,17 +112,31 @@ class CrossValidate(sl.WorkflowTask):
                             jobname='predlin_f%02d_c%010d' % (fold_idx, int(cost)),
                             threads='1'
                         ))
+                assess_lin = self.new_task('assesslin_fold_%d_cost_%s' % (fold_idx, cost), AssessLinearRMSD,
+                        slurminfo = sl.SlurmInfo(
+                            runmode=sl.RUNMODE_LOCAL, # For debugging
+                            project='b2013262',
+                            partition='core',
+                            cores='1',
+                            time='15:00',
+                            jobname='assesslin_f%02d_c%010d' % (fold_idx, int(cost)),
+                            threads='1'
+                        ))
 
                 # Connect tasks
                 create_folds.in_dataset = gunzip.out_ungzipped
                 train_lin.in_traindata = create_folds.out_traindata
                 pred_lin.in_linmodel = train_lin.out_linmodel
                 pred_lin.in_sparse_testdata = create_folds.out_testdata
+                assess_lin.in_linmodel = train_lin.out_linmodel
+                assess_lin.in_sparse_testdata = create_folds.out_testdata
+                assess_lin.in_prediction = pred_lin.out_prediction
 
                 tasks[cost][fold_idx] = {}
                 tasks[cost][fold_idx]['create_folds'] = create_folds
                 tasks[cost][fold_idx]['train_linear'] = train_lin
                 tasks[cost][fold_idx]['predict_linear'] = pred_lin
+                tasks[cost][fold_idx]['assess_linear'] = assess_lin
 
         return_tasks = [tasks[cost][fold_idx][self.task] for cost in costseq for fold_idx in xrange(self.folds_count)]
         return return_tasks
