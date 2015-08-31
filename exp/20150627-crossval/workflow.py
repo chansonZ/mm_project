@@ -138,8 +138,10 @@ class CrossValidate(sl.WorkflowTask):
                 tasks[cost][fold_idx]['predict_linear'] = pred_lin
                 tasks[cost][fold_idx]['assess_linear'] = assess_lin
 
+            # Calculate the average RMSD for each cost value
             average_rmsd = self.new_task('average_rmsd_cost_%s' % cost, CalcMean)
             average_rmsd.in_values = [tasks[cost][fold_idx]['assess_linear'].out_assessment for fold_idx in xrange(self.folds_count)]
+
             tasks[cost]['average_rmsd'] = average_rmsd
 
         return_tasks = [tasks[cost]['average_rmsd'] for cost in costseq]
