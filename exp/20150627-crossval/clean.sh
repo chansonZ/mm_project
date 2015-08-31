@@ -5,7 +5,8 @@ case $response in
         rm *.{log,audit};
         rm log/*.log;
         rm data/*.sign*;
-        rm -rf .audit_*
+        rm -rf audit/.audit_*
+        rm audit/*.audit
         ;;
     *)
         echo "Not doing anything"
