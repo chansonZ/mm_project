@@ -1,4 +1,3 @@
-from crossval import *
 from mmcomp import *
 import luigi
 import sciluigi as sl
@@ -148,7 +147,7 @@ class CrossValidate(sl.WorkflowTask):
 
         average_rmsds = [tasks[cost]['average_rmsd'] for cost in costseq]
 
-        sel_lowest_rmsd = self.new_task('select_cost', SelectLowestRMSD)
+        sel_lowest_rmsd = self.new_task('select_lowest_rmsd', SelectLowestRMSD)
         sel_lowest_rmsd.in_values = [average_rmsd.out_rmsdavg for average_rmsd in average_rmsds]
 
         return sel_lowest_rmsd
