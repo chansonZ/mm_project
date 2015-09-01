@@ -144,8 +144,12 @@ class CrossValidate(sl.WorkflowTask):
 
             tasks[cost]['average_rmsd'] = average_rmsd
 
-        return_tasks = [tasks[cost]['average_rmsd'] for cost in costseq]
-        return return_tasks
+        average_rmsds = [tasks[cost]['average_rmsd'] for cost in costseq]
+
+        sel_lowest_rmsd = self.new_task('select_cost', SelectLowestRMSD)
+        sel_lowest_rmsd.in_values = [average_rmsd.out_mean for average_rmsd in average_rmsds]
+
+        return sel_lowest_rmsd
 
 # ====================================================================================================
 
