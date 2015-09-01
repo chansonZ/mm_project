@@ -20,6 +20,7 @@ class CrossValidate(sl.WorkflowTask):
     max_height = luigi.Parameter()
     test_size = luigi.Parameter(default='10')
     train_size = luigi.Parameter(default='50')
+    slurm_project = luigi.Parameter(default='b2013262')
 
     def workflow(self):
         # Initialize tasks
@@ -32,7 +33,7 @@ class CrossValidate(sl.WorkflowTask):
                 max_height = self.max_height,
                 slurminfo = sl.SlurmInfo(
                     runmode=sl.RUNMODE_HPC, # For debugging
-                    project='b2013262',
+                    project=self.slurm_project,
                     partition='devcore',
                     cores='2',
                     time='15:00',
@@ -60,7 +61,7 @@ class CrossValidate(sl.WorkflowTask):
                 replicate_id=self.replicate_id,
                 slurminfo = sl.SlurmInfo(
                     runmode=sl.RUNMODE_HPC, # For debugging
-                    project='b2013262',
+                    project=self.slurm_project,
                     partition='devcore',
                     cores='2',
                     time='15:00',
@@ -93,7 +94,7 @@ class CrossValidate(sl.WorkflowTask):
                         lin_cost = cost,
                         slurminfo = sl.SlurmInfo(
                             runmode=sl.RUNMODE_LOCAL, # For debugging
-                            project='b2013262',
+                            project=self.slurm_project,
                             partition='core',
                             cores='1',
                             time='15:00',
@@ -104,7 +105,7 @@ class CrossValidate(sl.WorkflowTask):
                         replicate_id = self.replicate_id,
                         slurminfo = sl.SlurmInfo(
                             runmode=sl.RUNMODE_LOCAL, # For debugging
-                            project='b2013262',
+                            project=self.slurm_project,
                             partition='core',
                             cores='1',
                             time='15:00',
@@ -115,7 +116,7 @@ class CrossValidate(sl.WorkflowTask):
                         lin_cost = cost,
                         slurminfo = sl.SlurmInfo(
                             runmode=sl.RUNMODE_LOCAL, # For debugging
-                            project='b2013262',
+                            project=self.slurm_project,
                             partition='core',
                             cores='1',
                             time='15:00',
@@ -151,6 +152,250 @@ class CrossValidate(sl.WorkflowTask):
         sel_lowest_rmsd.in_values = [average_rmsd.out_rmsdavg for average_rmsd in average_rmsds]
 
         return sel_lowest_rmsd
+
+# ================================================================================
+
+class MMLinearWorkflow(sl.WorkflowTask):
+    '''
+    This class runs the MM Workflow using LibLinear
+    as the method for doing machine learning
+    '''
+
+    # WORKFLOW PARAMETERS
+    dataset_name = luigi.Parameter()
+    replicate_id = luigi.Parameter()
+    test_size = luigi.Parameter()
+    train_size = luigi.Parameter()
+    sampling_seed = luigi.Parameter(default=None)
+    sampling_method = luigi.Parameter()
+    lin_type = luigi.Parameter()
+    lin_cost = luigi.Parameter()
+    slurm_project = luigi.Parameter()
+    parallel_lin_train = luigi.BooleanParameter()
+    #folds_count = luigi.Parameter()
+
+    def workflow(self):
+        '''
+        The dependency graph is defined here!
+        '''
+        # --------------------------------------------------------------------------------
+        existing_smiles = self.new_task('existing_smiles', ExistingSmiles,
+                dataset_name = self.dataset_name,
+                replicate_id = self.replicate_id,
+                slurminfo = sl.SlurmInfo(
+                    runmode=sl.RUNMODE_HPC, # For debugging
+                    project=self.slurm_project,
+                    partition='devcore',
+                    cores='2',
+                    time='15:00',
+                    jobname='MMSampleTrainTest',
+                    threads='2'
+                ))
+        # --------------------------------------------------------------------------------
+        gen_sign_filter_subst = self.new_task('gen_sign_filter_subst', GenerateSignaturesFilterSubstances,
+                min_height = 1,
+                max_height = 3,
+                dataset_name = self.dataset_name,
+                replicate_id = self.replicate_id,
+                slurminfo = sl.SlurmInfo(
+                    runmode=sl.RUNMODE_HPC, # For debugging
+                    project=self.slurm_project,
+                    partition='devcore',
+                    cores='2',
+                    time='15:00',
+                    jobname='MMSampleTrainTest',
+                    threads='2'
+                ))
+        gen_sign_filter_subst.in_smiles = existing_smiles.out_smiles
+        # --------------------------------------------------------------------------------
+        create_unique_sign_copy = self.new_task('create_unique_sign_copy', CreateUniqueSignaturesCopy,
+                replicate_id = self.replicate_id,
+                dataset_name = self.dataset_name,
+                slurminfo = sl.SlurmInfo(
+                    runmode=sl.RUNMODE_HPC, # For debugging
+                    project=self.slurm_project,
+                    partition='devcore',
+                    cores='2',
+                    time='15:00',
+                    jobname='MMSampleTrainTest',
+                    threads='2'
+                ))
+        create_unique_sign_copy.in_signatures = gen_sign_filter_subst.out_signatures
+        # ------------------------------------------------------------------------
+        # RANDOM TRAIN/TEST SAMPLING
+        # ------------------------------------------------------------------------
+        if self.sampling_method == 'random':
+
+            sample_train_and_test = self.new_task('sample_train_and_test', SampleTrainAndTest,
+                    seed = self.sampling_seed,
+                    test_size = self.test_size,
+                    train_size = self.train_size,
+                    sampling_method = self.sampling_method,
+                    dataset_name = self.dataset_name,
+                    replicate_id = self.replicate_id,
+                    slurminfo = sl.SlurmInfo(
+                        runmode=sl.RUNMODE_HPC, # For debugging
+                        project=self.slurm_project,
+                        partition='devcore',
+                        cores='2',
+                        time='15:00',
+                        jobname='MMSampleTrainTest',
+                        threads='2'
+                    ))
+            in_signatures = create_unique_sign_copy.out_signatures
+        # ------------------------------------------------------------------------
+        # BCUT TRAIN/TEST SAMPLING
+        # ------------------------------------------------------------------------
+        elif self.sampling_method == 'bcut':
+            # ------------------------------------------------------------------------
+            bcut_preprocess = self.new_task('bcut_preprocess', BCutPreprocess,
+                    replicate_id = self.replicate_id,
+                    dataset_name = self.dataset_name,
+                    slurminfo = sl.SlurmInfo(
+                        runmode=sl.RUNMODE_HPC, # For debugging
+                        project=self.slurm_project,
+                        partition='devcore',
+                        cores='2',
+                        time='15:00',
+                        jobname='MMSampleTrainTest',
+                        threads='2'
+                    ))
+            in_signatures = create_unique_sign_copy.out_signatures
+            # ------------------------------------------------------------------------
+            sample_train_and_test = self.new_task('sample_train_and_test', BCutSplitTrainTest,
+                    train_size = self.train_size,
+                    test_size = self.test_size,
+                    replicate_id = self.replicate_id,
+                    dataset_name = self.dataset_name,
+                    slurminfo = sl.SlurmInfo(
+                        runmode=sl.RUNMODE_HPC, # For debugging
+                        project=self.slurm_project,
+                        partition='devcore',
+                        cores='2',
+                        time='15:00',
+                        jobname='MMSampleTrainTest',
+                        threads='2'
+                    ))
+            in_bcut_preprocessed = bcut_preprocess.out_bcut_preprocessed
+        # (end if)
+        # ------------------------------------------------------------------------
+        create_sparse_train_dataset = self.new_task('create_sparse_train_dataset', CreateSparseTrainDataset,
+                dataset_name = self.dataset_name,
+                replicate_id = self.replicate_id,
+                slurminfo = sl.SlurmInfo(
+                    runmode=sl.RUNMODE_HPC, # For debugging
+                    project=self.slurm_project,
+                    partition='devcore',
+                    cores='2',
+                    time='15:00',
+                    jobname='MMSampleTrainTest',
+                    threads='2'
+                ))
+        in_train_dataset = sample_train_and_test.out_train_dataset
+        # ------------------------------------------------------------------------
+        create_sparse_test_dataset = self.new_task('create_sparse_test_dataset', CreateSparseTestDataset,
+                dataset_name = self.dataset_name,
+                replicate_id = self.replicate_id,
+                slurminfo = sl.SlurmInfo(
+                    runmode=sl.RUNMODE_HPC, # For debugging
+                    project=self.slurm_project,
+                    partition='devcore',
+                    cores='2',
+                    time='15:00',
+                    jobname='MMSampleTrainTest',
+                    threads='2'
+                ))
+        in_test_dataset = sample_train_and_test.out_test_dataset
+        in_signatures = create_sparse_train_dataset.out_signatures
+        # ------------------------------------------------------------------------
+        train_lin_model = self.new_task('train_lin_model', TrainLinearModel,
+                replicate_id = self.replicate_id,
+                train_size = self.train_size,
+                lin_type = self.lin_type,
+                lin_cost = self.lin_cost,
+                dataset_name = self.dataset_name,
+                slurminfo = sl.SlurmInfo(
+                    runmode=sl.RUNMODE_HPC, # For debugging
+                    project=self.slurm_project,
+                    partition='devcore',
+                    cores='2',
+                    time='15:00',
+                    jobname='MMSampleTrainTest',
+                    threads='2'
+                ))
+        in_train_dataset = create_sparse_train_dataset.out_sparse_train_dataset
+        # ------------------------------------------------------------------------
+        predict_lin = self.new_task('predict_lin', PredictLinearModel,
+                dataset_name = self.dataset_name,
+                replicate_id = self.replicate_id,
+                slurminfo = sl.SlurmInfo(
+                    runmode=sl.RUNMODE_HPC, # For debugging
+                    project=self.slurm_project,
+                    partition='devcore',
+                    cores='2',
+                    time='15:00',
+                    jobname='MMSampleTrainTest',
+                    threads='2'
+                ))
+        in_linmodel = train_lin_model.out_lin_model
+        in_sparse_test_dataset = create_sparse_test_dataset.out_sparse_test_dataset
+        # ------------------------------------------------------------------------
+        assess_svm_regression = self.new_task('assess_svm_regression', AssessSVMRegression,
+                dataset_name = self.dataset_name,
+                replicate_id = self.replicate_id,
+                slurminfo = sl.SlurmInfo(
+                    runmode=sl.RUNMODE_HPC, # For debugging
+                    project=self.slurm_project,
+                    partition='devcore',
+                    cores='2',
+                    time='15:00',
+                    jobname='MMSampleTrainTest',
+                    threads='2'
+                ))
+        in_prediction = predict_lin.out_prediction
+        in_svmmodel = train_lin_model.out_lin_model
+        in_sparse_test_dataset = create_sparse_test_dataset.out_sparse_test_dataset
+        # ------------------------------------------------------------------------
+        create_report = self.new_task('create_report', CreateReport,
+                test_size = self.test_size,
+                train_size = self.train_size,
+                svm_cost = self.lin_cost,
+                svm_gamma = 'N/A',
+                dataset_name = self.dataset_name,
+                replicate_id = self.replicate_id,
+                slurminfo = sl.SlurmInfo(
+                    runmode=sl.RUNMODE_HPC, # For debugging
+                    project=self.slurm_project,
+                    partition='devcore',
+                    cores='2',
+                    time='15:00',
+                    jobname='MMSampleTrainTest',
+                    threads='2'
+                ))
+        in_signatures = gen_sign_filter_subst.out_signatures
+        in_sample_traintest_log = sample_train_and_test.out_log
+        in_sparse_testdataset_log = create_sparse_test_dataset.out_log
+        in_sparse_traindataset_log = create_sparse_train_dataset.out_log
+        in_svmmodel = train_lin_model.out_lin_model
+        in_assess_svm_log = assess_svm_regression.out_log
+        in_assess_svm_plot = assess_svm_regression.out_plot
+        in_train_dataset = create_sparse_train_dataset.out_sparse_train_dataset
+
+
+    # WORKFLOW DEPENDENCY GRAPH DEFINITION
+    def requires(self):
+        return self.create_report
+
+    # DEFINE AN WORKFLOW COMPLETION MARKER
+    def output(self):
+        #return { 'completion_marker' : luigi.LocalTarget(self.input()['completion_marker'].path + '.workflow_complete') }
+        #return { 'completion_marker' : luigi.LocalTarget(self.input()['properties'].path + '.workflow_complete') }
+        return { 'completion_marker' : luigi.LocalTarget(self.input()['html_report'].path + '.workflow_complete') }
+
+    # WRITE A DUMMY LINE TO THE WORKFLOW COMPLETION MARKER
+    def run(self):
+        with self.output()['completion_marker'].open('w') as outfile:
+            outfile.write('workflow was run to completion')
 
 # ====================================================================================================
 
