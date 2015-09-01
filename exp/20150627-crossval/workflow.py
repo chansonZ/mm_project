@@ -113,6 +113,7 @@ class CrossValidate(sl.WorkflowTask):
                             threads='1'
                         ))
                 assess_lin = self.new_task('assesslin_fold_%d_cost_%s' % (fold_idx, cost), AssessLinearRMSD,
+                        lin_cost = cost,
                         slurminfo = sl.SlurmInfo(
                             runmode=sl.RUNMODE_LOCAL, # For debugging
                             project='b2013262',
@@ -139,15 +140,16 @@ class CrossValidate(sl.WorkflowTask):
                 tasks[cost][fold_idx]['assess_linear'] = assess_lin
 
             # Calculate the average RMSD for each cost value
-            average_rmsd = self.new_task('average_rmsd_cost_%s' % cost, CalcMean)
-            average_rmsd.in_values = [tasks[cost][fold_idx]['assess_linear'].out_assessment for fold_idx in xrange(self.folds_count)]
+            average_rmsd = self.new_task('average_rmsd_cost_%s' % cost, CalcAverageRMSDForCost,
+                    lin_cost=cost)
+            average_rmsd.in_assessments = [tasks[cost][fold_idx]['assess_linear'].out_assessment for fold_idx in xrange(self.folds_count)]
 
             tasks[cost]['average_rmsd'] = average_rmsd
 
         average_rmsds = [tasks[cost]['average_rmsd'] for cost in costseq]
 
         sel_lowest_rmsd = self.new_task('select_cost', SelectLowestRMSD)
-        sel_lowest_rmsd.in_values = [average_rmsd.out_mean for average_rmsd in average_rmsds]
+        sel_lowest_rmsd.in_values = [average_rmsd.out_rmsdavg for average_rmsd in average_rmsds]
 
         return sel_lowest_rmsd
 

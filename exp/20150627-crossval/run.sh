@@ -12,4 +12,4 @@ python workflow.py\
     --min-height 1\
     --max-height 3\
     --replicate-id r1\
-    --workers 80
+    --workers 1 #80
