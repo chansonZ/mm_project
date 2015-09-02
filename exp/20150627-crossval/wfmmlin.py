@@ -142,7 +142,7 @@ class MMLinear(sl.WorkflowTask):
         ungzip_testdata = self.new_task('ungzip_testdata', UnGzipFile)
         ungzip_testdata.in_gzipped = create_sparse_test_dataset.out_sparse_testdata
         # ------------------------------------------------------------------------
-        ungzip_traindata = self.new_task('ungzip_testdata', UnGzipFile)
+        ungzip_traindata = self.new_task('ungzip_traindata', UnGzipFile)
         ungzip_traindata.in_gzipped = create_sparse_train_dataset.out_sparse_traindata
         # ------------------------------------------------------------------------
         train_lin_model = self.new_task('train_lin_model', TrainLinearModel,
