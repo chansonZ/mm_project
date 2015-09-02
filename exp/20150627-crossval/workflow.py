@@ -338,6 +338,7 @@ class MMLinear(sl.WorkflowTask):
         assess_linear.in_prediction = predict_lin.out_prediction
         assess_linear.in_linmodel = train_lin_model.out_linmodel
         assess_linear.in_sparse_testdata = create_sparse_test_dataset.out_sparse_testdata
+        return assess_linear
 
 # ====================================================================================================
 
