@@ -6,7 +6,7 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 projbin=$DIR/../../bin
 export PATH=$projbin:$PATH
 
-python workflow.py\
+python mmfindcost.py\
     --task assess_linear\
     --folds-count 10\
     --min-height 1\
