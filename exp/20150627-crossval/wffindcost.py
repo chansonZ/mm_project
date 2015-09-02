@@ -76,7 +76,7 @@ class CrossValidate(sl.WorkflowTask):
         replcopy.in_file = gensign.out_signatures
         samplett.in_signatures = replcopy.out_copy
         sprstrain.in_traindata = samplett.out_traindata
-        gunzip.in_gzipped = sprstrain.out_sparsetraindata
+        gunzip.in_gzipped = sprstrain.out_sparse_traindata
 
         tasks = {}
         costseq = [str(int(10**p)) for p in xrange(1,9)]
