@@ -1,0 +1,7 @@
+#!/bin/bash
+# Get directory path of current directory
+#DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+# Run the command, forwarding all parameters
+cmd="/sw/comp/java/x86_64/sun_jdk1.7.0_25/bin/java -classpath '../lib/cdk/cdk-1.4.19.jar:bcut.jar' -class bcut $@"
+echo "Running command "$cmd" ..."
+$cmd
