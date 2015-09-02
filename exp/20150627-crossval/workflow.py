@@ -14,6 +14,7 @@ class CrossValidate(sl.WorkflowTask):
     '''
 
     # PARAMETERS
+    dataset_name = luigi.Parameter(default='mm_test_small')
     folds_count = luigi.IntParameter()
     replicate_id = luigi.Parameter()
     min_height = luigi.Parameter()
@@ -26,7 +27,7 @@ class CrossValidate(sl.WorkflowTask):
         # Initialize tasks
         mmtestdata = self.new_task('mmtestdata', ExistingSmiles,
                 replicate_id=self.replicate_id,
-                dataset_name='mm_test_small')
+                dataset_name=self.dataset_name)
         gensign = self.new_task('gensign', GenerateSignaturesFilterSubstances,
                 replicate_id=self.replicate_id,
                 min_height = self.min_height,
@@ -155,14 +156,14 @@ class CrossValidate(sl.WorkflowTask):
 
 # ================================================================================
 
-class MMLinearWorkflow(sl.WorkflowTask):
+class MMLinear(sl.WorkflowTask):
     '''
     This class runs the MM Workflow using LibLinear
     as the method for doing machine learning
     '''
 
     # WORKFLOW PARAMETERS
-    dataset_name = luigi.Parameter()
+    dataset_name = luigi.Parameter(default='mm_test_small')
     replicate_id = luigi.Parameter()
     test_size = luigi.Parameter()
     train_size = luigi.Parameter()
@@ -181,16 +182,7 @@ class MMLinearWorkflow(sl.WorkflowTask):
         # --------------------------------------------------------------------------------
         existing_smiles = self.new_task('existing_smiles', ExistingSmiles,
                 dataset_name = self.dataset_name,
-                replicate_id = self.replicate_id,
-                slurminfo = sl.SlurmInfo(
-                    runmode=sl.RUNMODE_HPC, # For debugging
-                    project=self.slurm_project,
-                    partition='devcore',
-                    cores='2',
-                    time='15:00',
-                    jobname='MMSampleTrainTest',
-                    threads='2'
-                ))
+                replicate_id = self.replicate_id)
         # --------------------------------------------------------------------------------
         gen_sign_filter_subst = self.new_task('gen_sign_filter_subst', GenerateSignaturesFilterSubstances,
                 min_height = 1,
@@ -208,19 +200,9 @@ class MMLinearWorkflow(sl.WorkflowTask):
                 ))
         gen_sign_filter_subst.in_smiles = existing_smiles.out_smiles
         # --------------------------------------------------------------------------------
-        create_unique_sign_copy = self.new_task('create_unique_sign_copy', CreateUniqueSignaturesCopy,
-                replicate_id = self.replicate_id,
-                dataset_name = self.dataset_name,
-                slurminfo = sl.SlurmInfo(
-                    runmode=sl.RUNMODE_HPC, # For debugging
-                    project=self.slurm_project,
-                    partition='devcore',
-                    cores='2',
-                    time='15:00',
-                    jobname='MMSampleTrainTest',
-                    threads='2'
-                ))
-        create_unique_sign_copy.in_signatures = gen_sign_filter_subst.out_signatures
+        create_unique_sign_copy = self.new_task('create_unique_sign_copy', CreateReplicateCopy,
+                replicate_id = self.replicate_id)
+        create_unique_sign_copy.in_file = gen_sign_filter_subst.out_signatures
         # ------------------------------------------------------------------------
         # RANDOM TRAIN/TEST SAMPLING
         # ------------------------------------------------------------------------
@@ -242,7 +224,7 @@ class MMLinearWorkflow(sl.WorkflowTask):
                         jobname='MMSampleTrainTest',
                         threads='2'
                     ))
-            in_signatures = create_unique_sign_copy.out_signatures
+            sample_train_and_test.in_signatures = create_unique_sign_copy.out_copy
         # ------------------------------------------------------------------------
         # BCUT TRAIN/TEST SAMPLING
         # ------------------------------------------------------------------------
@@ -260,7 +242,7 @@ class MMLinearWorkflow(sl.WorkflowTask):
                         jobname='MMSampleTrainTest',
                         threads='2'
                     ))
-            in_signatures = create_unique_sign_copy.out_signatures
+            bcut_preprocess.in_signatures = create_unique_sign_copy.out_signatures
             # ------------------------------------------------------------------------
             sample_train_and_test = self.new_task('sample_train_and_test', BCutSplitTrainTest,
                     train_size = self.train_size,
@@ -276,7 +258,7 @@ class MMLinearWorkflow(sl.WorkflowTask):
                         jobname='MMSampleTrainTest',
                         threads='2'
                     ))
-            in_bcut_preprocessed = bcut_preprocess.out_bcut_preprocessed
+            sample_train_and_test.in_bcut_preprocessed = bcut_preprocess.out_bcut_preprocessed
         # (end if)
         # ------------------------------------------------------------------------
         create_sparse_train_dataset = self.new_task('create_sparse_train_dataset', CreateSparseTrainDataset,
@@ -291,7 +273,7 @@ class MMLinearWorkflow(sl.WorkflowTask):
                     jobname='MMSampleTrainTest',
                     threads='2'
                 ))
-        in_train_dataset = sample_train_and_test.out_train_dataset
+        create_sparse_train_dataset.in_traindata = sample_train_and_test.out_traindata
         # ------------------------------------------------------------------------
         create_sparse_test_dataset = self.new_task('create_sparse_test_dataset', CreateSparseTestDataset,
                 dataset_name = self.dataset_name,
@@ -305,8 +287,8 @@ class MMLinearWorkflow(sl.WorkflowTask):
                     jobname='MMSampleTrainTest',
                     threads='2'
                 ))
-        in_test_dataset = sample_train_and_test.out_test_dataset
-        in_signatures = create_sparse_train_dataset.out_signatures
+        create_sparse_test_dataset.in_testdata = sample_train_and_test.out_testdata
+        create_sparse_test_dataset.in_signatures = create_sparse_train_dataset.out_signatures
         # ------------------------------------------------------------------------
         train_lin_model = self.new_task('train_lin_model', TrainLinearModel,
                 replicate_id = self.replicate_id,
@@ -323,7 +305,7 @@ class MMLinearWorkflow(sl.WorkflowTask):
                     jobname='MMSampleTrainTest',
                     threads='2'
                 ))
-        in_train_dataset = create_sparse_train_dataset.out_sparse_train_dataset
+        train_lin_model.in_traindata = create_sparse_train_dataset.out_sparse_traindata
         # ------------------------------------------------------------------------
         predict_lin = self.new_task('predict_lin', PredictLinearModel,
                 dataset_name = self.dataset_name,
@@ -337,12 +319,13 @@ class MMLinearWorkflow(sl.WorkflowTask):
                     jobname='MMSampleTrainTest',
                     threads='2'
                 ))
-        in_linmodel = train_lin_model.out_lin_model
-        in_sparse_test_dataset = create_sparse_test_dataset.out_sparse_test_dataset
+        predict_lin.in_linmodel = train_lin_model.out_linmodel
+        predict_lin.in_sparse_testdata = create_sparse_test_dataset.out_sparse_testdata
         # ------------------------------------------------------------------------
-        assess_svm_regression = self.new_task('assess_svm_regression', AssessSVMRegression,
+        assess_linear = self.new_task('assess_linear', AssessLinearRMSD,
                 dataset_name = self.dataset_name,
                 replicate_id = self.replicate_id,
+                lin_cost = self.lin_cost,
                 slurminfo = sl.SlurmInfo(
                     runmode=sl.RUNMODE_HPC, # For debugging
                     project=self.slurm_project,
@@ -352,52 +335,11 @@ class MMLinearWorkflow(sl.WorkflowTask):
                     jobname='MMSampleTrainTest',
                     threads='2'
                 ))
-        in_prediction = predict_lin.out_prediction
-        in_svmmodel = train_lin_model.out_lin_model
-        in_sparse_test_dataset = create_sparse_test_dataset.out_sparse_test_dataset
-        # ------------------------------------------------------------------------
-        create_report = self.new_task('create_report', CreateReport,
-                test_size = self.test_size,
-                train_size = self.train_size,
-                svm_cost = self.lin_cost,
-                svm_gamma = 'N/A',
-                dataset_name = self.dataset_name,
-                replicate_id = self.replicate_id,
-                slurminfo = sl.SlurmInfo(
-                    runmode=sl.RUNMODE_HPC, # For debugging
-                    project=self.slurm_project,
-                    partition='devcore',
-                    cores='2',
-                    time='15:00',
-                    jobname='MMSampleTrainTest',
-                    threads='2'
-                ))
-        in_signatures = gen_sign_filter_subst.out_signatures
-        in_sample_traintest_log = sample_train_and_test.out_log
-        in_sparse_testdataset_log = create_sparse_test_dataset.out_log
-        in_sparse_traindataset_log = create_sparse_train_dataset.out_log
-        in_svmmodel = train_lin_model.out_lin_model
-        in_assess_svm_log = assess_svm_regression.out_log
-        in_assess_svm_plot = assess_svm_regression.out_plot
-        in_train_dataset = create_sparse_train_dataset.out_sparse_train_dataset
-
-
-    # WORKFLOW DEPENDENCY GRAPH DEFINITION
-    def requires(self):
-        return self.create_report
-
-    # DEFINE AN WORKFLOW COMPLETION MARKER
-    def output(self):
-        #return { 'completion_marker' : luigi.LocalTarget(self.input()['completion_marker'].path + '.workflow_complete') }
-        #return { 'completion_marker' : luigi.LocalTarget(self.input()['properties'].path + '.workflow_complete') }
-        return { 'completion_marker' : luigi.LocalTarget(self.input()['html_report'].path + '.workflow_complete') }
-
-    # WRITE A DUMMY LINE TO THE WORKFLOW COMPLETION MARKER
-    def run(self):
-        with self.output()['completion_marker'].open('w') as outfile:
-            outfile.write('workflow was run to completion')
+        assess_linear.in_prediction = predict_lin.out_prediction
+        assess_linear.in_linmodel = train_lin_model.out_linmodel
+        assess_linear.in_sparse_testdata = create_sparse_test_dataset.out_sparse_testdata
 
 # ====================================================================================================
 
 if __name__ == '__main__':
-    sl.run_local(main_task_cls=CrossValidate)
+    sl.run_local()
