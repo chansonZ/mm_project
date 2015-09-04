@@ -8,19 +8,18 @@ import time
 # ====================================================================================================
 
 class CrossValidate(sl.WorkflowTask):
-    task = luigi.Parameter()
     '''
     For now, a sketch on how to implement Cross-Validation as a sub-workflow components
     '''
 
     # PARAMETERS
-    dataset_name = luigi.Parameter(default='mm_test_small')
+    dataset_name = luigi.Parameter()
     folds_count = luigi.IntParameter()
     replicate_id = luigi.Parameter()
     min_height = luigi.Parameter()
     max_height = luigi.Parameter()
-    test_size = luigi.Parameter(default='10')
-    train_size = luigi.Parameter(default='50')
+    test_size = luigi.Parameter(default='50000')
+    train_size = luigi.Parameter(default='rest')
     slurm_project = luigi.Parameter(default='b2013262')
 
     def workflow(self):
@@ -35,11 +34,11 @@ class CrossValidate(sl.WorkflowTask):
                 slurminfo = sl.SlurmInfo(
                     runmode=sl.RUNMODE_HPC, # For debugging
                     project=self.slurm_project,
-                    partition='devcore',
-                    cores='2',
-                    time='15:00',
-                    jobname='MMGenSignTest',
-                    threads='2'
+                    partition='core',
+                    cores='8',
+                    time='1:00:00',
+                    jobname='mmgensign',
+                    threads='8'
                 ))
         replcopy = self.new_task('replcopy', CreateReplicateCopy,
                 replicate_id=self.replicate_id)
@@ -52,22 +51,22 @@ class CrossValidate(sl.WorkflowTask):
                 slurminfo = sl.SlurmInfo(
                     runmode=sl.RUNMODE_HPC, # For debugging
                     project='b2013262',
-                    partition='devcore',
-                    cores='2',
-                    time='15:00',
-                    jobname='MMSampleTrainTest',
-                    threads='2'
+                    partition='core',
+                    cores='12',
+                    time='1:00:00',
+                    jobname='mmsampletraintest',
+                    threads='1'
                 ))
         sprstrain = self.new_task('sparsetrain', CreateSparseTrainDataset,
                 replicate_id=self.replicate_id,
                 slurminfo = sl.SlurmInfo(
                     runmode=sl.RUNMODE_HPC, # For debugging
                     project=self.slurm_project,
-                    partition='devcore',
-                    cores='2',
-                    time='15:00',
-                    jobname='MMSampleTrainTest',
-                    threads='2'
+                    partition='node',
+                    cores='16',
+                    time='1-00:00:00',
+                    jobname='mmsparsetrain',
+                    threads='16'
                 ))
         gunzip = self.new_task('gunzip_sparsetrain', UnGzipFile)
 
@@ -94,29 +93,29 @@ class CrossValidate(sl.WorkflowTask):
                         lin_type = '0', # 0 = Regression
                         lin_cost = cost,
                         slurminfo = sl.SlurmInfo(
-                            runmode=sl.RUNMODE_LOCAL, # For debugging
+                            runmode=sl.RUNMODE_HPC, # For debugging
                             project=self.slurm_project,
                             partition='core',
                             cores='1',
-                            time='15:00',
+                            time='4-00:00:00',
                             jobname='trnlin_f%02d_c%010d' % (fold_idx, int(cost)),
                             threads='1'
                         ))
                 pred_lin = self.new_task('predlin_fold_%d_cost_%s' % (fold_idx, cost), PredictLinearModel,
                         replicate_id = self.replicate_id,
                         slurminfo = sl.SlurmInfo(
-                            runmode=sl.RUNMODE_LOCAL, # For debugging
+                            runmode=sl.RUNMODE_HPC, # For debugging
                             project=self.slurm_project,
                             partition='core',
                             cores='1',
-                            time='15:00',
+                            time='8:00:00',
                             jobname='predlin_f%02d_c%010d' % (fold_idx, int(cost)),
                             threads='1'
                         ))
                 assess_lin = self.new_task('assesslin_fold_%d_cost_%s' % (fold_idx, cost), AssessLinearRMSD,
                         lin_cost = cost,
                         slurminfo = sl.SlurmInfo(
-                            runmode=sl.RUNMODE_LOCAL, # For debugging
+                            runmode=sl.RUNMODE_HPC, # For debugging
                             project=self.slurm_project,
                             partition='core',
                             cores='1',
