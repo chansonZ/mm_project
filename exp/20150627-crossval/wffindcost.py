@@ -64,7 +64,7 @@ class CrossValidate(sl.WorkflowTask):
                     project=self.slurm_project,
                     partition='node',
                     cores='16',
-                    time='1-00:00:00',
+                    time='1-00:00:00', # Took ~16hrs for acd_logd, size: rest(train) - 50000(test)
                     jobname='mmsparsetrain',
                     threads='16'
                 ))
