@@ -18,4 +18,5 @@ python wffindcost.py\
     --min-height=1\
     --max-height=3\
     --replicate-id=r1\
-    --workers=80 #80
+    --workers=80\
+    --runmode hpc
