@@ -21,9 +21,18 @@ class CrossValidate(sl.WorkflowTask):
     test_size = luigi.Parameter(default='50000')
     train_size = luigi.Parameter(default='rest')
     slurm_project = luigi.Parameter(default='b2013262')
+    runmode = luigi.Parameter()
 
     def workflow(self):
-        # Initialize tasks
+        if self.runmode == 'local':
+            runmode = sl.RUNMODE_LOCAL
+        elif self.runmode == 'hpc':
+            runmode = sl.RUNMODE_HPC
+        elif self.runmode == 'mpi':
+            runmode = sl.RUNMODE_MPI
+        else:
+            raise Exception('Runmode is none of local, hpc, nor mpi. Please fix and try again!')
+
         mmtestdata = self.new_task('mmtestdata', ExistingSmiles,
                 replicate_id=self.replicate_id,
                 dataset_name=self.dataset_name)
@@ -32,7 +41,7 @@ class CrossValidate(sl.WorkflowTask):
                 min_height = self.min_height,
                 max_height = self.max_height,
                 slurminfo = sl.SlurmInfo(
-                    runmode=sl.RUNMODE_HPC, # For debugging
+                    runmode=self.runmode,
                     project=self.slurm_project,
                     partition='core',
                     cores='8',
@@ -49,7 +58,7 @@ class CrossValidate(sl.WorkflowTask):
                 test_size=self.test_size,
                 train_size=self.train_size,
                 slurminfo = sl.SlurmInfo(
-                    runmode=sl.RUNMODE_HPC, # For debugging
+                    runmode=self.runmode,
                     project='b2013262',
                     partition='core',
                     cores='12',
@@ -60,7 +69,7 @@ class CrossValidate(sl.WorkflowTask):
         sprstrain = self.new_task('sparsetrain', CreateSparseTrainDataset,
                 replicate_id=self.replicate_id,
                 slurminfo = sl.SlurmInfo(
-                    runmode=sl.RUNMODE_HPC, # For debugging
+                    runmode=self.runmode,
                     project=self.slurm_project,
                     partition='node',
                     cores='16',
@@ -70,12 +79,22 @@ class CrossValidate(sl.WorkflowTask):
                 ))
         gunzip = self.new_task('gunzip_sparsetrain', UnGzipFile,
                 slurminfo = sl.SlurmInfo(
-                    runmode=sl.RUNMODE_HPC, # For debugging
+                    runmode=self.runmode,
                     project=self.slurm_project,
                     partition='core',
                     cores='1',
                     time='1:00:00',
-                    jobname='gunzipe_sparsetrain',
+                    jobname='gunzip_sparsetrain',
+                    threads='1'
+                ))
+        cntlines = self.new_task('countlines', CountLines,
+                slurminfo = sl.SlurmInfo(
+                    runmode=self.runmode,
+                    project=self.slurm_project,
+                    partition='devcore',
+                    cores='1',
+                    time='15:00',
+                    jobname='gunzip_sparsetrain',
                     threads='1'
                 ))
 
@@ -85,6 +104,7 @@ class CrossValidate(sl.WorkflowTask):
         samplett.in_signatures = replcopy.out_copy
         sprstrain.in_traindata = samplett.out_traindata
         gunzip.in_gzipped = sprstrain.out_sparse_traindata
+        cntlines.in_file = sprstrain.out_sparse_traindata
 
         tasks = {}
         costseq = [str(int(10**p)) for p in xrange(1,9)]
@@ -93,16 +113,25 @@ class CrossValidate(sl.WorkflowTask):
             # Branch the workflow into one branch per fold
             for fold_idx in xrange(self.folds_count):
                 # Init tasks
-                create_folds = self.new_task('create_fold_%d' % fold_idx, CreateFolds,
+                create_folds = self.new_task('create_fold%02d_cost%s' % (fold_idx, cost), CreateFolds,
                         fold_index = fold_idx,
                         folds_count = self.folds_count,
-                        seed = 0.637)
+                        seed = 0.637,
+                        slurminfo = sl.SlurmInfo(
+                            runmode=self.runmode,
+                            project=self.slurm_project,
+                            partition='core',
+                            cores='1',
+                            time='1:00:00',
+                            jobname='create_fold%02d_cost%s' % (fold_idx, cost),
+                            threads='1'
+                        ))
                 train_lin = self.new_task('trainlin_fold_%d_cost_%s' % (fold_idx, cost), TrainLinearModel,
                         replicate_id = self.replicate_id,
                         lin_type = '0', # 0 = Regression
                         lin_cost = cost,
                         slurminfo = sl.SlurmInfo(
-                            runmode=sl.RUNMODE_HPC, # For debugging
+                            runmode=self.runmode,
                             project=self.slurm_project,
                             partition='core',
                             cores='1',
@@ -113,7 +142,7 @@ class CrossValidate(sl.WorkflowTask):
                 pred_lin = self.new_task('predlin_fold_%d_cost_%s' % (fold_idx, cost), PredictLinearModel,
                         replicate_id = self.replicate_id,
                         slurminfo = sl.SlurmInfo(
-                            runmode=sl.RUNMODE_HPC, # For debugging
+                            runmode=self.runmode,
                             project=self.slurm_project,
                             partition='core',
                             cores='1',
@@ -124,7 +153,7 @@ class CrossValidate(sl.WorkflowTask):
                 assess_lin = self.new_task('assesslin_fold_%d_cost_%s' % (fold_idx, cost), AssessLinearRMSD,
                         lin_cost = cost,
                         slurminfo = sl.SlurmInfo(
-                            runmode=sl.RUNMODE_HPC, # For debugging
+                            runmode=self.runmode,
                             project=self.slurm_project,
                             partition='core',
                             cores='1',
@@ -135,6 +164,7 @@ class CrossValidate(sl.WorkflowTask):
 
                 # Connect tasks
                 create_folds.in_dataset = gunzip.out_ungzipped
+                create_folds.in_linecount = cntlines.out_linecount
                 train_lin.in_traindata = create_folds.out_traindata
                 pred_lin.in_linmodel = train_lin.out_linmodel
                 pred_lin.in_sparse_testdata = create_folds.out_testdata
