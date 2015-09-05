@@ -68,7 +68,16 @@ class CrossValidate(sl.WorkflowTask):
                     jobname='mmsparsetrain',
                     threads='16'
                 ))
-        gunzip = self.new_task('gunzip_sparsetrain', UnGzipFile)
+        gunzip = self.new_task('gunzip_sparsetrain', UnGzipFile,
+                slurminfo = sl.SlurmInfo(
+                    runmode=sl.RUNMODE_HPC, # For debugging
+                    project=self.slurm_project,
+                    partition='core',
+                    cores='1',
+                    time='1:00:00',
+                    jobname='gunzipe_sparsetrain',
+                    threads='1'
+                ))
 
         # Connect tasks by their inports and outports
         gensign.in_smiles = mmtestdata.out_smiles
