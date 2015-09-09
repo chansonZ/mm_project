@@ -18,5 +18,8 @@ python wffindcost.py\
     --min-height=1\
     --max-height=3\
     --replicate-id=r1\
+    --test-size=50000\
+    --train-size=rest\
+    --randomdatasize-mb=100\
     --workers=80\
     --runmode hpc
