@@ -113,7 +113,7 @@ class CrossValidate(sl.WorkflowTask):
                     jobname='gunzip_sparsetrain',
                     threads='1'
                 ))
-        cntlines.in_file = sprstrain.out_sparse_traindata
+        cntlines.in_file = gunzip.out_ungzipped
         # ----------------------------------------------------------------
         genrandomdata= self.new_task('genrandomdata', CreateRandomData,
                 size_mb=self.randomdatasize_mb,
