@@ -145,24 +145,25 @@ class CrossValidate(sl.WorkflowTask):
 
         tasks = {}
         costseq = [str(int(10**p)) for p in xrange(1,9)]
-        for cost in costseq:
-            tasks[cost] = {}
-            # Branch the workflow into one branch per fold
-            for fold_idx in xrange(self.folds_count):
-                # Init tasks
-                create_folds = self.new_task('create_fold%02d_cost%s' % (fold_idx, cost), CreateFolds,
-                        fold_index = fold_idx,
-                        folds_count = self.folds_count,
-                        seed = 0.637,
-                        slurminfo = sl.SlurmInfo(
-                            runmode=runmode,
-                            project=self.slurm_project,
-                            partition='core',
-                            cores='1',
-                            time='5:00',
-                            jobname='create_fold%02d_cost%s' % (fold_idx, cost),
-                            threads='1'
-                        ))
+        # Branch the workflow into one branch per fold
+        for fold_idx in xrange(self.folds_count):
+            tasks[fold_idx] = {}
+            # Init tasks
+            create_folds = self.new_task('create_fold%02d' % fold_idx, CreateFolds,
+                    fold_index = fold_idx,
+                    folds_count = self.folds_count,
+                    seed = 0.637,
+                    slurminfo = sl.SlurmInfo(
+                        runmode=runmode,
+                        project=self.slurm_project,
+                        partition='core',
+                        cores='1',
+                        time='1:00:00',
+                        jobname='create_fold%02d' % fold_idx,
+                        threads='1'
+                    ))
+            for cost in costseq:
+                tasks[fold_idx][cost] = {}
                 create_folds.in_dataset = shufflelines.out_shuffled
                 create_folds.in_linecount = cntlines.out_linecount
                 # -------------------------------------------------
@@ -210,23 +211,23 @@ class CrossValidate(sl.WorkflowTask):
                 assess_lin.in_sparse_testdata = create_folds.out_testdata
                 assess_lin.in_prediction = pred_lin.out_prediction
                 # -------------------------------------------------
-                tasks[cost][fold_idx] = {}
-                tasks[cost][fold_idx]['create_folds'] = create_folds
-                tasks[cost][fold_idx]['train_linear'] = train_lin
-                tasks[cost][fold_idx]['predict_linear'] = pred_lin
-                tasks[cost][fold_idx]['assess_linear'] = assess_lin
+                tasks[fold_idx][cost] = {}
+                tasks[fold_idx][cost]['create_folds'] = create_folds
+                tasks[fold_idx][cost]['train_linear'] = train_lin
+                tasks[fold_idx][cost]['predict_linear'] = pred_lin
+                tasks[fold_idx][cost]['assess_linear'] = assess_lin
 
+        # Tasks for calculating average RMSD and finding the cost with lowest RMSD
+        avgrmsd_tasks = {}
+        for cost in costseq:
             # Calculate the average RMSD for each cost value
             average_rmsd = self.new_task('average_rmsd_cost_%s' % cost, CalcAverageRMSDForCost,
                     lin_cost=cost)
-            average_rmsd.in_assessments = [tasks[cost][fold_idx]['assess_linear'].out_assessment for fold_idx in xrange(self.folds_count)]
-
-            tasks[cost]['average_rmsd'] = average_rmsd
-
-        average_rmsds = [tasks[cost]['average_rmsd'] for cost in costseq]
+            average_rmsd.in_assessments = [tasks[fold_idx][cost]['assess_linear'].out_assessment for fold_idx in xrange(self.folds_count)]
+            avgrmsd_tasks[cost] = average_rmsd
 
         sel_lowest_rmsd = self.new_task('select_lowest_rmsd', SelectLowestRMSD)
-        sel_lowest_rmsd.in_values = [average_rmsd.out_rmsdavg for average_rmsd in average_rmsds]
+        sel_lowest_rmsd.in_values = [average_rmsd.out_rmsdavg for average_rmsd in avgrmsd_tasks.values()]
 
         return sel_lowest_rmsd
 

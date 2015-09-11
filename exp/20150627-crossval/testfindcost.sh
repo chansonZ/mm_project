@@ -21,5 +21,5 @@ python wffindcost.py\
     --test-size=10\
     --train-size=rest\
     --randomdatasize-mb=10\
-    --workers=1\
+    --workers=10\
     --runmode=local
