@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -A b2013262
 #SBATCH -p core
-#SBATCH -n 2
+#SBATCH -n 16
 #SBATCH -t 7-00:00:00
 #SBATCH -J MMFindCostAcdLogD
 
