@@ -21,5 +21,5 @@ python wffindcost.py\
     --test-size=50000\
     --train-size=rest\
     --randomdatasize-mb=100\
-    --workers=80\
+    --workers=64\
     --runmode hpc
