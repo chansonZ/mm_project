@@ -7,7 +7,9 @@
 python wfmmlin.py MMLinear \
     --dataset-name=acd_logd \
     --sampling-method=random \
-    --lin-type=0 \
-    --lin-cost=1000 \
+    --test-size=50000 \
+    --train-size=10000 \
+    --lin-type=12 \
     --slurm-project=b2013262 \
-    --runmode=hpc
+    --runmode=hpc \
+    --workers=2
