@@ -61,129 +61,134 @@ class MMLinear(sl.WorkflowTask):
                     replicate_id = replicate_id)
             create_unique_sign_copy.in_file = gen_sign_filter_subst.out_signatures
             # --------------------------------------------------------------------------------
-            for test_size in ['50000']:
+            for test_size in [self.test_size]:
                 # --------------------------------------------------------------------------------
-                for train_size in ['100']: # ['100', '1000', ...
-                    sample_train_and_test = self.new_task('sample_trn%s_tst%s' % (train_size, test_size), SampleTrainAndTest,
-                            seed = self.sampling_seed,
-                            test_size = test_size,
-                            train_size = train_size,
-                            sampling_method = self.sampling_method,
-                            dataset_name = self.dataset_name,
-                            replicate_id = replicate_id,
-                            slurminfo = sl.SlurmInfo(
-                                runmode=runmode,
-                                project=self.slurm_project,
-                                partition='devcore',
-                                cores='12',
-                                time='1:00:00',
-                                jobname='MMLinSampleTrainTest',
-                                threads='1'
-                            ))
-                    sample_train_and_test.in_signatures = create_unique_sign_copy.out_copy
-                    # --------------------------------------------------------------------------------
-                    create_sparse_train_dataset = self.new_task('create_sparse_traindata_trn%s_tst%s' % (train_size, test_size), CreateSparseTrainDataset,
-                            dataset_name = self.dataset_name,
-                            replicate_id = replicate_id,
-                            slurminfo = sl.SlurmInfo(
-                                runmode=runmode,
-                                project=self.slurm_project,
-                                partition='node',
-                                cores='16',
-                                time='1-00:00:00',
-                                jobname='MMLinCreateSparseTrain',
-                                threads='16'
-                            ))
-                    create_sparse_train_dataset.in_traindata = sample_train_and_test.out_traindata
-                    # ------------------------------------------------------------------------
-                    create_sparse_test_dataset = self.new_task('create_sparse_testdata_trn%s_tst%s' % (train_size, test_size), CreateSparseTestDataset,
-                            dataset_name = self.dataset_name,
-                            replicate_id = replicate_id,
-                            slurminfo = sl.SlurmInfo(
-                                runmode=runmode,
-                                project=self.slurm_project,
-                                partition='node',
-                                cores='16',
-                                time='1-00:00:00',
-                                jobname='MMLinCreateSparseTest',
-                                threads='16'
-                            ))
-                    create_sparse_test_dataset.in_testdata = sample_train_and_test.out_testdata
-                    create_sparse_test_dataset.in_signatures = create_sparse_train_dataset.out_signatures
-                    # ------------------------------------------------------------------------
-                    ungzip_testdata = self.new_task('ungzip_testdata_trn%s_tst%s' % (train_size, test_size), UnGzipFile,
-                            slurminfo = sl.SlurmInfo(
-                                runmode=runmode,
-                                project=self.slurm_project,
-                                partition='core',
-                                cores='1',
-                                time='1:00:00',
-                                jobname='MMLinUnGzipTestData',
-                                threads='1'
-                            ))
-                    ungzip_testdata.in_gzipped = create_sparse_test_dataset.out_sparse_testdata
-                    # ------------------------------------------------------------------------
-                    ungzip_traindata = self.new_task('ungzip_traindata_trn%s_tst%s' % (train_size, test_size), UnGzipFile,
-                            slurminfo = sl.SlurmInfo(
-                                runmode=runmode,
-                                project=self.slurm_project,
-                                partition='core',
-                                cores='1',
-                                time='1:00:00',
-                                jobname='MMLinUnGzipTrainData',
-                                threads='1'
-                            ))
-                    ungzip_traindata.in_gzipped = create_sparse_train_dataset.out_sparse_traindata
-                    # ------------------------------------------------------------------------
-                    train_lin_model = self.new_task('train_lin_trn%s_tst%s' % (train_size, test_size), TrainLinearModel,
-                            replicate_id = replicate_id,
-                            train_size = train_size,
-                            lin_type = self.lin_type,
-                            lin_cost = self.lin_cost,
-                            dataset_name = self.dataset_name,
-                            slurminfo = sl.SlurmInfo(
-                                runmode=runmode,
-                                project=self.slurm_project,
-                                partition='core',
-                                cores='1',
-                                time='4-00:00:00',
-                                jobname='MMTrainLinear',
-                                threads='1'
-                            ))
-                    train_lin_model.in_traindata = ungzip_traindata.out_ungzipped
-                    # ------------------------------------------------------------------------
-                    predict_lin = self.new_task('predict_lin_trn%s_tst%s' % (train_size, test_size), PredictLinearModel,
-                            dataset_name = self.dataset_name,
-                            replicate_id = replicate_id,
-                            slurminfo = sl.SlurmInfo(
-                                runmode=runmode,
-                                project=self.slurm_project,
-                                partition='core',
-                                cores='1',
-                                time='4:00:00',
-                                jobname='MMSampleTrainTest',
-                                threads='1'
-                            ))
-                    predict_lin.in_linmodel = train_lin_model.out_linmodel
-                    predict_lin.in_sparse_testdata = ungzip_testdata.out_ungzipped
-                    # ------------------------------------------------------------------------
-                    assess_linear = self.new_task('assess_lin_trn%s_tst%s' % (train_size, test_size), AssessLinearRMSD,
-                            dataset_name = self.dataset_name,
-                            replicate_id = replicate_id,
-                            lin_cost = self.lin_cost,
-                            slurminfo = sl.SlurmInfo(
-                                runmode=runmode,
-                                project=self.slurm_project,
-                                partition='core',
-                                cores='1',
-                                time='15:00',
-                                jobname='MMSampleTrainTest',
-                                threads='1'
-                            ))
-                    assess_linear.in_prediction = predict_lin.out_prediction
-                    assess_linear.in_linmodel = ungzip_traindata.out_ungzipped
-                    assess_linear.in_sparse_testdata = ungzip_testdata.out_ungzipped
-                    return_tasks.append(assess_linear)
+                for train_size in [self.train_size]: # ['100', '1000', ...
+                    for cost in ['10', '1000000000']:
+                        create_unique_cost_copy = self.new_task('create_unique_cost_copy_%s' % cost, CreateReplicateCopy,
+                                replicate_id = 'cost' + cost)
+                        create_unique_cost_copy.in_file = create_unique_sign_copy.out_copy
+                        # --------------------------------------------------------------------------------
+                        sample_train_and_test = self.new_task('sample_trn%s_tst%s_c%s' % (train_size, test_size, cost), SampleTrainAndTest,
+                                seed = self.sampling_seed,
+                                test_size = test_size,
+                                train_size = train_size,
+                                sampling_method = self.sampling_method,
+                                dataset_name = self.dataset_name,
+                                replicate_id = replicate_id,
+                                slurminfo = sl.SlurmInfo(
+                                    runmode=runmode,
+                                    project=self.slurm_project,
+                                    partition='devcore',
+                                    cores='12',
+                                    time='1:00:00',
+                                    jobname='MMLinSampleTrainTest',
+                                    threads='1'
+                                ))
+                        sample_train_and_test.in_signatures = create_unique_cost_copy.out_copy
+                        # --------------------------------------------------------------------------------
+                        create_sparse_train_dataset = self.new_task('create_sparse_traindata_trn%s_tst%s_c%s' % (train_size, test_size, cost), CreateSparseTrainDataset,
+                                dataset_name = self.dataset_name,
+                                replicate_id = replicate_id,
+                                slurminfo = sl.SlurmInfo(
+                                    runmode=runmode,
+                                    project=self.slurm_project,
+                                    partition='node',
+                                    cores='16',
+                                    time='1-00:00:00',
+                                    jobname='MMLinCreateSparseTrain',
+                                    threads='16'
+                                ))
+                        create_sparse_train_dataset.in_traindata = sample_train_and_test.out_traindata
+                        # ------------------------------------------------------------------------
+                        create_sparse_test_dataset = self.new_task('create_sparse_testdata_trn%s_tst%s_c%s' % (train_size, test_size, cost), CreateSparseTestDataset,
+                                dataset_name = self.dataset_name,
+                                replicate_id = replicate_id,
+                                slurminfo = sl.SlurmInfo(
+                                    runmode=runmode,
+                                    project=self.slurm_project,
+                                    partition='node',
+                                    cores='16',
+                                    time='1-00:00:00',
+                                    jobname='sparse_trn%s_tst%s_c%s' % (train_size, test_size, cost),
+                                    threads='16'
+                                ))
+                        create_sparse_test_dataset.in_testdata = sample_train_and_test.out_testdata
+                        create_sparse_test_dataset.in_signatures = create_sparse_train_dataset.out_signatures
+                        # ------------------------------------------------------------------------
+                        ungzip_testdata = self.new_task('ungzip_testdata_trn%s_tst%s_c%s' % (train_size, test_size, cost), UnGzipFile,
+                                slurminfo = sl.SlurmInfo(
+                                    runmode=runmode,
+                                    project=self.slurm_project,
+                                    partition='core',
+                                    cores='1',
+                                    time='1:00:00',
+                                    jobname='ungziptest_trn%s_tst%s_c%s' % (train_size, test_size, cost),
+                                    threads='1'
+                                ))
+                        ungzip_testdata.in_gzipped = create_sparse_test_dataset.out_sparse_testdata
+                        # ------------------------------------------------------------------------
+                        ungzip_traindata = self.new_task('ungzip_traindata_trn%s_tst%s_c%s' % (train_size, test_size, cost), UnGzipFile,
+                                slurminfo = sl.SlurmInfo(
+                                    runmode=runmode,
+                                    project=self.slurm_project,
+                                    partition='core',
+                                    cores='1',
+                                    time='1:00:00',
+                                    jobname='ungziptrain_trn%s_tst%s_c%s' % (train_size, test_size, cost),
+                                    threads='1'
+                                ))
+                        ungzip_traindata.in_gzipped = create_sparse_train_dataset.out_sparse_traindata
+                        # ------------------------------------------------------------------------
+                        train_lin_model = self.new_task('train_lin_trn%s_tst%s_c%s' % (train_size, test_size, cost), TrainLinearModel,
+                                replicate_id = replicate_id,
+                                train_size = train_size,
+                                lin_type = self.lin_type,
+                                lin_cost = cost,
+                                dataset_name = self.dataset_name,
+                                slurminfo = sl.SlurmInfo(
+                                    runmode=runmode,
+                                    project=self.slurm_project,
+                                    partition='core',
+                                    cores='1',
+                                    time='4-00:00:00',
+                                    jobname='trainlin_trn%s_tst%s_c%s' % (train_size, test_size, cost),
+                                    threads='1'
+                                ))
+                        train_lin_model.in_traindata = ungzip_traindata.out_ungzipped
+                        # ------------------------------------------------------------------------
+                        predict_lin = self.new_task('predict_lin_trn%s_tst%s_c%s' % (train_size, test_size, cost), PredictLinearModel,
+                                dataset_name = self.dataset_name,
+                                replicate_id = replicate_id,
+                                slurminfo = sl.SlurmInfo(
+                                    runmode=runmode,
+                                    project=self.slurm_project,
+                                    partition='core',
+                                    cores='1',
+                                    time='4:00:00',
+                                    jobname='predlin_trn%s_tst%s_c%s' % (train_size, test_size, cost),
+                                    threads='1'
+                                ))
+                        predict_lin.in_linmodel = train_lin_model.out_linmodel
+                        predict_lin.in_sparse_testdata = ungzip_testdata.out_ungzipped
+                        # ------------------------------------------------------------------------
+                        assess_linear = self.new_task('assess_lin_trn%s_tst%s_c%s' % (train_size, test_size, cost), AssessLinearRMSD,
+                                dataset_name = self.dataset_name,
+                                replicate_id = replicate_id,
+                                lin_cost = cost,
+                                slurminfo = sl.SlurmInfo(
+                                    runmode=runmode,
+                                    project=self.slurm_project,
+                                    partition='core',
+                                    cores='1',
+                                    time='15:00',
+                                    jobname='assesslin_trn%s_tst%s_c%s' % (train_size, test_size, cost),
+                                    threads='1'
+                                ))
+                        assess_linear.in_prediction = predict_lin.out_prediction
+                        assess_linear.in_linmodel = ungzip_traindata.out_ungzipped
+                        assess_linear.in_sparse_testdata = ungzip_testdata.out_ungzipped
+                        return_tasks.append(assess_linear)
         return return_tasks
 
 # ====================================================================================================
