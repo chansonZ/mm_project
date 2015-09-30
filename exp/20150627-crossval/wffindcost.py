@@ -22,7 +22,7 @@ class CrossValidate(sl.WorkflowTask):
     min_height = luigi.Parameter()
     max_height = luigi.Parameter()
     test_size = luigi.Parameter()
-    train_size = luigi.Parameter()
+    train_sizes = luigi.Parameter()
     randomdatasize_mb = luigi.IntParameter()
     slurm_project = luigi.Parameter(default='b2013262')
     runmode = luigi.Parameter()
@@ -61,7 +61,7 @@ class CrossValidate(sl.WorkflowTask):
                 replicate_id=self.replicate_id)
         replcopy.in_file = gensign.out_signatures
         lowest_rmsds = []
-        for train_size in [str(i) for i in [100, 1000, 5000, 10000, 20000, 80000, 160000, 320000, 'rest']]:
+        for train_size in [i for i in self.train_sizes.split(',')]:
             samplett = self.new_task('sampletraintest_%s' % train_size, SampleTrainAndTest,
                     replicate_id=self.replicate_id,
                     sampling_method='random',
