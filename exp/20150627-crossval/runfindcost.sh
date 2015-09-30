@@ -2,7 +2,7 @@
 #SBATCH -A b2013262
 #SBATCH -p core
 #SBATCH -n 16
-#SBATCH -t 7-00:00:00
+#SBATCH -t 4-00:00:00
 #SBATCH -J MMFindCostAcdLogD
 
 # Get directory path of current directory
