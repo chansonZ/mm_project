@@ -145,7 +145,7 @@ class CrossValidate(sl.WorkflowTask):
             # ----------------------------------------------------------------
 
             tasks = {}
-            costseq = [str(int(10**p)) for p in xrange(1,12)]
+            costseq = ['0.0001', '0.0005', '0.001', '0.005', '0.01', '0.05', '0.1', '0.5', '1', '5' ] + [str(int(10**p)) for p in xrange(1,12)]
             # Branch the workflow into one branch per fold
             for fold_idx in xrange(self.folds_count):
                 tasks[fold_idx] = {}
@@ -178,7 +178,7 @@ class CrossValidate(sl.WorkflowTask):
                                 partition='core',
                                 cores='1',
                                 time='4-00:00:00',
-                                jobname='trnlin_f%02d_c%010d_%s' % (fold_idx, int(cost), train_size),
+                                jobname='trnlin_f%02d_c%s_%s' % (fold_idx, cost, train_size),
                                 threads='1'
                             ))
                     train_lin.in_traindata = create_folds.out_traindata
@@ -191,7 +191,7 @@ class CrossValidate(sl.WorkflowTask):
                                 partition='core',
                                 cores='1',
                                 time='8:00:00',
-                                jobname='predlin_f%02d_c%010d_%s' % (fold_idx, int(cost), train_size),
+                                jobname='predlin_f%02d_c%s_%s' % (fold_idx, cost, train_size),
                                 threads='1'
                             ))
                     pred_lin.in_linmodel = train_lin.out_linmodel
@@ -205,7 +205,7 @@ class CrossValidate(sl.WorkflowTask):
                                 partition='core',
                                 cores='1',
                                 time='15:00',
-                                jobname='assesslin_f%02d_c%010d_%s' % (fold_idx, int(cost), train_size),
+                                jobname='assesslin_f%02d_c%s_%s' % (fold_idx, cost, train_size),
                                 threads='1'
                             ))
                     assess_lin.in_linmodel = train_lin.out_linmodel
