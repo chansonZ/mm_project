@@ -145,7 +145,7 @@ class CrossValidate(sl.WorkflowTask):
             # ----------------------------------------------------------------
 
             tasks = {}
-            costseq = ['0.0001', '0.0005', '0.001', '0.005', '0.01', '0.05', '0.1', '0.5', '1', '5' ] + [str(int(10**p)) for p in xrange(1,12)]
+            costseq = ['0.0001', '0.0005', '0.001', '0.005', '0.01', '0.05', '0.1', '0.25', '0.5', '0.75', '1', '2', '3', '4', '5' ] + [str(int(10**p)) for p in xrange(1,12)]
             # Branch the workflow into one branch per fold
             for fold_idx in xrange(self.folds_count):
                 tasks[fold_idx] = {}
