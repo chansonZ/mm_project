@@ -18,7 +18,6 @@ class CrossValidate(sl.WorkflowTask):
     # PARAMETERS
     dataset_name = luigi.Parameter()
     folds_count = luigi.IntParameter()
-    replicate_id = luigi.Parameter()
     min_height = luigi.Parameter()
     max_height = luigi.Parameter()
     test_size = luigi.Parameter()
