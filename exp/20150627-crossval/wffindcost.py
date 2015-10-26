@@ -23,6 +23,7 @@ class CrossValidate(sl.WorkflowTask):
     max_height = luigi.Parameter()
     test_size = luigi.Parameter()
     train_sizes = luigi.Parameter()
+    lin_type = luigi.Parameter(default='12') # 12, See: https://www.csie.ntu.edu.tw/~cjlin/liblinear/FAQ.html
     randomdatasize_mb = luigi.IntParameter()
     slurm_project = luigi.Parameter(default='b2013262')
     runmode = luigi.Parameter()
@@ -171,7 +172,7 @@ class CrossValidate(sl.WorkflowTask):
                         # -------------------------------------------------
                         train_lin = self.new_task('trainlin_fold_%d_cost_%s_%s_%s' % (fold_idx, cost, train_size, replicate_id), TrainLinearModel,
                                 replicate_id = replicate_id,
-                                lin_type = '12', # 12, See: https://www.csie.ntu.edu.tw/~cjlin/liblinear/FAQ.html
+                                lin_type = self.lin_type,
                                 lin_cost = cost,
                                 slurminfo = sl.SlurmInfo(
                                     runmode=runmode,
