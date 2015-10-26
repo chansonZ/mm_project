@@ -43,6 +43,7 @@ class CrossValidate(sl.WorkflowTask):
                 dataset_name=self.dataset_name)
         tasks = {}
         lowest_rmsds = []
+        mainwfruns = []
         for replicate_id in ['r1', 'r2', 'r3']:
             tasks[replicate_id] = {}
             gensign = self.new_task('gensign_%s' % replicate_id, GenerateSignaturesFilterSubstances,
@@ -231,11 +232,63 @@ class CrossValidate(sl.WorkflowTask):
                 sel_lowest_rmsd = self.new_task('select_lowest_rmsd_%s_%s' % (train_size, replicate_id), SelectLowestRMSD)
                 sel_lowest_rmsd.in_values = [average_rmsd.out_rmsdavg for average_rmsd in avgrmsd_tasks.values()]
 
+                mainwfrun = self.new_task('mainwfrun_%s_%s' % (train_size, replicate_id), MainWorkflowRunner, 
+                        dataset_name=self.dataset_name,
+                        sampling_seed='123',
+                        sampling_method='random',
+                        test_size='50000',
+                        train_size=train_size,
+                        lin_type=self.lin_type,
+                        slurm_project=self.slurm_project,
+                        parallel_lin_train=False,
+                        replicate_id=replicate_id,
+                        runmode=self.runmode)
+                mainwfrun.in_lowestrmsd = sel_lowest_rmsd.out_lowest
+
                 # Collect one lowest rmsd per train size
                 lowest_rmsds.append(sel_lowest_rmsd)
 
-        return lowest_rmsds
+                mainwfruns.append(mainwfrun)
 
+        return mainwfruns
+
+# ================================================================================
+
+class MainWorkflowRunner(sl.Task):
+    # Parameters
+    dataset_name = luigi.Parameter()
+    sampling_seed = luigi.Parameter()
+    sampling_method = luigi.Parameter()
+    test_size = luigi.Parameter()
+    train_size = luigi.Parameter()
+    lin_type = luigi.Parameter()
+    slurm_project = luigi.Parameter()
+    parallel_lin_train = luigi.BooleanParameter()
+    replicate_id =luigi.Parameter()
+    runmode = luigi.Parameter()
+    # In-ports
+    in_lowestrmsd = None
+    # Out-ports
+    def out_done(self):
+        return sl.TargetInfo(self, self.in_lowestrmsd().path + '.mainwf_done')
+    # Task action
+    def run(self):
+        with self.in_lowestrmsd().open() as infile:
+            records = sl.recordfile_to_dict(infile)
+            lowest_cost = records['lowest_cost']
+        self.ex('python wfmmlin.py MMLinear' +
+                ' --dataset-name=%s' % self.dataset_name +
+                ' --sampling-seed=%s' % self.sampling_seed +
+                ' --sampling-method=%s' % self.sampling_method +
+                ' --test-size=%s' % self.test_size +
+                ' --train-size=%s' % self.train_size +
+                ' --lin-type=%s' % self.lin_type +
+                ' --lin-cost=%s' % lowest_cost +
+                ' --slurm-project=%s' % self.slurm_project +
+                ' --replicate-id=%s' % self.replicate_id +
+                ' --runmode=%s' % self.runmode)
+        with self.out_done().open('w') as donefile:
+            donefile.write('Done!\n')
 
 # ================================================================================
 
