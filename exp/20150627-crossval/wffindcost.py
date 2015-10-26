@@ -236,7 +236,7 @@ class CrossValidate(sl.WorkflowTask):
                         dataset_name=self.dataset_name,
                         sampling_seed='123',
                         sampling_method='random',
-                        test_size='50000',
+                        test_size=self.test_size,
                         train_size=train_size,
                         lin_type=self.lin_type,
                         slurm_project=self.slurm_project,
