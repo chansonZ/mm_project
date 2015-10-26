@@ -17,7 +17,6 @@ python wffindcost.py\
     --folds-count=10\
     --min-height=1\
     --max-height=3\
-    --replicate-id=r1\
     --test-size=10\
     --train-size=rest\
     --randomdatasize-mb=10\
