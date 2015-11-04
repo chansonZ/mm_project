@@ -9,14 +9,17 @@ def main():
     rmsd_paths = glob.glob(glob_pattern)
     for rp in rmsd_paths:
         datarow = {}
-        ms = re.findall('(solubility|acd_logd).smi.h1_3.sign.(r[0-9]).([0-9]+)_([0-9]+|rest)_rand_trn.csr.ungz.s12_c([0-9\.]+).(lin|svm)mdl.pred.rmsd', rp)
-        m = ms[0]
+        ms = re.match('data/(solubility|acd_logd).smi.h1_3.sign.(r[0-9]).([0-9]+)_([0-9]+|rest)_rand_trn.csr.ungz.s12_c([0-9\.]+).(lin|svm)mdl.pred.rmsd', rp)
+        m = ms.groups()
         datarow['dataset'] = m[0]
         datarow['replicate'] = m[1]
         datarow['test_size'] = m[2]
         datarow['training_size'] = m[3]
         datarow['cost'] = m[4]
-        datarow['learning_method'] = m[5]
+        if m[5] == 'lin':
+            datarow['learning_method'] = 'liblinear'
+        elif m[5] == 'svm':
+            datarow['learning_method'] = 'svm'
         with open(rp) as rf:
             rd = sl.util.recordfile_to_dict(rf)
             datarow['rmsd'] = rd['rmsd']
