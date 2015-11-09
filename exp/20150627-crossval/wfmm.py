@@ -25,8 +25,8 @@ class MMWorkflow(sl.WorkflowTask):
     train_sizes = luigi.Parameter(default=None)
     test_size = luigi.Parameter()
 
-    lin_type = luigi.Parameter()
-    lin_cost = luigi.Parameter()
+    lin_type = luigi.Parameter('12')
+    lin_cost = luigi.Parameter(None)
 
     # svm_gamma = '0.001',
     # svm_cost = '100',
