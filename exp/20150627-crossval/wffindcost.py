@@ -196,7 +196,7 @@ class CrossValidate(sl.WorkflowTask):
                                     jobname='predlin_f%02d_c%s_%s_%s' % (fold_idx, cost, train_size, replicate_id),
                                     threads='1'
                                 ))
-                        pred_lin.in_linmodel = train_lin.out_linmodel
+                        pred_lin.in_model = train_lin.out_model
                         pred_lin.in_sparse_testdata = create_folds.out_testdata
                         # -------------------------------------------------
                         assess_lin = self.new_task('assesslin_fold_%d_cost_%s_%s_%s' % (fold_idx, cost, train_size, replicate_id), AssessLinearRMSD,
@@ -210,7 +210,7 @@ class CrossValidate(sl.WorkflowTask):
                                     jobname='assesslin_f%02d_c%s_%s_%s' % (fold_idx, cost, train_size, replicate_id),
                                     threads='1'
                                 ))
-                        assess_lin.in_linmodel = train_lin.out_linmodel
+                        assess_lin.in_model = train_lin.out_model
                         assess_lin.in_sparse_testdata = create_folds.out_testdata
                         assess_lin.in_prediction = pred_lin.out_prediction
                         # -------------------------------------------------
@@ -232,7 +232,7 @@ class CrossValidate(sl.WorkflowTask):
                 sel_lowest_rmsd = self.new_task('select_lowest_rmsd_%s_%s' % (train_size, replicate_id), SelectLowestRMSD)
                 sel_lowest_rmsd.in_values = [average_rmsd.out_rmsdavg for average_rmsd in avgrmsd_tasks.values()]
 
-                mainwfrun = self.new_task('mainwfrun_%s_%s' % (train_size, replicate_id), MainWorkflowRunner, 
+                mainwfrun = self.new_task('mainwfrun_%s_%s' % (train_size, replicate_id), MainWorkflowRunner,
                         dataset_name=self.dataset_name,
                         sampling_seed='123',
                         sampling_method='random',

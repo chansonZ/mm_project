@@ -5,6 +5,9 @@ import time
 
 # ================================================================================
 
+TRAINMETHOD_LIBLINEAR = 'liblinear'
+TRAINMETHOD_SVMRBF = 'svmrbf'
+
 class MMLinear(sl.WorkflowTask):
     '''
     This class runs the MM Workflow using LibLinear
@@ -13,15 +16,28 @@ class MMLinear(sl.WorkflowTask):
 
     # WORKFLOW PARAMETERS
     dataset_name = luigi.Parameter(default='mm_test_small')
+    replicate_id = luigi.Parameter()
     sampling_seed = luigi.Parameter(default=None)
     sampling_method = luigi.Parameter()
-    test_size = luigi.Parameter()
+    train_method = luigi.Parameter() # TRAINMETHOD_LIBLINEAR or TRAINMETHOD_SVMRBF
     train_size = luigi.Parameter()
+    test_size = luigi.Parameter()
+
     lin_type = luigi.Parameter()
     lin_cost = luigi.Parameter()
+
+    # svm_gamma = '0.001',
+    # svm_cost = '100',
+    # svm_type = '3',
+    # svm_kernel_type = '2',
+
+    svm_gamma = luigi.Parameter(default='0.001')
+    svm_cost = luigi.Parameter(default='100')
+    svm_type = luigi.Parameter(default='3')
+    svm_kernel_type = luigi.Parameter('2')
+
     slurm_project = luigi.Parameter()
     parallel_lin_train = luigi.BooleanParameter()
-    replicate_id = luigi.Parameter()
     runmode = luigi.Parameter()
     #folds_count = luigi.Parameter()
 
@@ -132,56 +148,117 @@ class MMLinear(sl.WorkflowTask):
                     threads='1'
                 ))
         ungzip_traindata.in_gzipped = create_sparse_train_dataset.out_sparse_traindata
-        # ------------------------------------------------------------------------
-        train_lin_model = self.new_task('train_lin_trn%s_tst%s_c%s' % (self.train_size, self.test_size, self.lin_cost), TrainLinearModel,
-                replicate_id = self.replicate_id,
-                train_size = self.train_size,
-                lin_type = self.lin_type,
-                lin_cost = self.lin_cost,
-                dataset_name = self.dataset_name,
-                slurminfo = sl.SlurmInfo(
-                    runmode=runmode,
-                    project=self.slurm_project,
-                    partition='core',
-                    cores='1',
-                    time='4-00:00:00',
-                    jobname='trainlin_trn%s_tst%s_c%s' % (self.train_size, self.test_size, self.lin_cost),
-                    threads='1'
-                ))
-        train_lin_model.in_traindata = ungzip_traindata.out_ungzipped
-        # ------------------------------------------------------------------------
-        predict_lin = self.new_task('predict_lin_trn%s_tst%s_c%s' % (self.train_size, self.test_size, self.lin_cost), PredictLinearModel,
-                dataset_name = self.dataset_name,
-                replicate_id = self.replicate_id,
-                slurminfo = sl.SlurmInfo(
-                    runmode=runmode,
-                    project=self.slurm_project,
-                    partition='core',
-                    cores='1',
-                    time='4:00:00',
-                    jobname='predlin_trn%s_tst%s_c%s' % (self.train_size, self.test_size, self.lin_cost),
-                    threads='1'
-                ))
-        predict_lin.in_linmodel = train_lin_model.out_linmodel
-        predict_lin.in_sparse_testdata = ungzip_testdata.out_ungzipped
-        # ------------------------------------------------------------------------
-        assess_linear = self.new_task('assess_lin_trn%s_tst%s_c%s' % (self.train_size, self.test_size, self.lin_cost), AssessLinearRMSD,
-                dataset_name = self.dataset_name,
-                replicate_id = self.replicate_id,
-                lin_cost = self.lin_cost,
-                slurminfo = sl.SlurmInfo(
-                    runmode=runmode,
-                    project=self.slurm_project,
-                    partition='core',
-                    cores='1',
-                    time='15:00',
-                    jobname='assesslin_trn%s_tst%s_c%s' % (self.train_size, self.test_size, self.lin_cost),
-                    threads='1'
-                ))
-        assess_linear.in_prediction = predict_lin.out_prediction
-        assess_linear.in_linmodel = ungzip_traindata.out_ungzipped
-        assess_linear.in_sparse_testdata = ungzip_testdata.out_ungzipped
-        return_tasks.append(assess_linear)
+        # ========================================================================
+        # START: ALTERNATIVE TRAINING METHODS
+        # ========================================================================
+        if self.train_method == TRAINMETHOD_LIBLINEAR:
+            train_model = self.new_task('train_lin_trn%s_tst%s_c%s' % (self.train_size, self.test_size, self.lin_cost), TrainLinearModel,
+                    replicate_id = self.replicate_id,
+                    dataset_name = self.dataset_name,
+                    train_size = self.train_size,
+                    test_size = self.test_size,
+                    lin_type = self.lin_type,
+                    lin_cost = self.lin_cost,
+                    slurminfo = sl.SlurmInfo(
+                        runmode=runmode,
+                        project=self.slurm_project,
+                        partition='core',
+                        cores='1',
+                        time='4-00:00:00',
+                        jobname='trainlin_trn%s_tst%s_c%s' % (self.train_size, self.test_size, self.lin_cost),
+                        threads='1'
+                    ))
+            train_model.in_traindata = ungzip_traindata.out_ungzipped
+            # ------------------------------------------------------------------------
+            predict = self.new_task('predict_lin_trn%s_tst%s_c%s' % (self.train_size, self.test_size, self.lin_cost), PredictLinearModel,
+                    dataset_name = self.dataset_name,
+                    replicate_id = self.replicate_id,
+                    slurminfo = sl.SlurmInfo(
+                        runmode=runmode,
+                        project=self.slurm_project,
+                        partition='core',
+                        cores='1',
+                        time='4:00:00',
+                        jobname='predlin_trn%s_tst%s_c%s' % (self.train_size, self.test_size, self.lin_cost),
+                        threads='1'
+                    ))
+            predict.in_model = train_model.out_model
+            predict.in_sparse_testdata = ungzip_testdata.out_ungzipped
+            # ------------------------------------------------------------------------
+            assess_model = self.new_task('assess_lin_trn%s_tst%s_c%s' % (self.train_size, self.test_size, self.lin_cost), AssessLinearRMSD,
+                    dataset_name = self.dataset_name,
+                    replicate_id = self.replicate_id,
+                    lin_cost = self.lin_cost,
+                    slurminfo = sl.SlurmInfo(
+                        runmode=runmode,
+                        project=self.slurm_project,
+                        partition='core',
+                        cores='1',
+                        time='15:00',
+                        jobname='assesslin_trn%s_tst%s_c%s' % (self.train_size, self.test_size, self.lin_cost),
+                        threads='1'
+                    ))
+        # ========================================================================
+        elif self.train_method == TRAINMETHOD_SVMRBF:
+        # ========================================================================
+            train_model = self.new_task('train_svm_trn%s_tst%s_g%s_c%s' % (self.train_size, self.test_size, self.svm_gamma, self.svm_cost), TrainSVMModel,
+                    replicate_id = self.replicate_id,
+                    dataset_name = self.dataset_name,
+                    train_size = self.train_size,
+                    svm_gamma = '0.001',
+                    svm_cost = '100',
+                    svm_type = '3',
+                    svm_kernel_type = '2',
+                    slurminfo = sl.SlurmInfo(
+                        runmode=runmode,
+                        project=self.slurm_project,
+                        partition='core',
+                        cores='1',
+                        time='4-00:00:00',
+                        jobname='trainsvm_tr%s_ts%s_g%s_c%s' % (self.train_size, self.test_size, self.svm_gamma, self.svm_cost),
+                        threads='1'
+                    ))
+            train_model.in_traindata = ungzip_traindata.out_ungzipped
+            # ------------------------------------------------------------------------
+            predict = self.new_task('predict_svm_trn%s_tst%s_g%s_c%s' % (self.train_size, self.test_size, self.svm_gamma, self.svm_cost), PredictSVMModel,
+                    dataset_name = self.dataset_name,
+                    replicate_id = self.replicate_id,
+                    slurminfo = sl.SlurmInfo(
+                        runmode=runmode,
+                        project=self.slurm_project,
+                        partition='core',
+                        cores='1',
+                        time='4:00:00',
+                        jobname='predlin_trn%s_tst%s_c%s' % (self.train_size, self.test_size, self.lin_cost),
+                        threads='1'
+                    ))
+            predict.in_svmmodel = train_model.out_model
+            predict.in_sparse_testdata = ungzip_testdata.out_ungzipped
+            # ------------------------------------------------------------------------
+            assess_model = self.new_task('assess_lin_trn%s_tst%s_c%s' % (self.train_size, self.test_size, self.lin_cost),
+                    AssessSVMRMSD,
+                    dataset_name = self.dataset_name,
+                    replicate_id = self.replicate_id,
+                    svm_cost = self.svm_cost,
+                    svm_gamma = self.svm_gamma,
+                    svm_type = self.svm_type,
+                    svm_kernel_type = self.svm_kernel_type,
+                    slurminfo = sl.SlurmInfo(
+                        runmode=runmode,
+                        project=self.slurm_project,
+                        partition='core',
+                        cores='1',
+                        time='15:00',
+                        jobname='assesslin_trn%s_tst%s_c%s' % (self.train_size, self.test_size, self.lin_cost),
+                        threads='1'
+                    ))
+        # ========================================================================
+        # END: ALTERNATIVE TRAINING METHODS
+        # ========================================================================
+        assess_model.in_prediction = predict.out_prediction
+        assess_model.in_model = ungzip_traindata.out_ungzipped
+        assess_model.in_sparse_testdata = ungzip_testdata.out_ungzipped
+        return_tasks.append(assess_model)
         return return_tasks
 
 # ====================================================================================================
