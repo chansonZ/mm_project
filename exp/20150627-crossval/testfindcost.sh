@@ -17,8 +17,8 @@ python wffindcost.py\
     --folds-count=10\
     --min-height=1\
     --max-height=3\
-    --test-size=10\
     --train-size=rest\
+    --test-size=10\
     --randomdatasize-mb=10\
     --workers=10\
     --runmode=local
