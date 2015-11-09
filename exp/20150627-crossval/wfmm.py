@@ -16,6 +16,7 @@ class MMWorkflow(sl.WorkflowTask):
 
     # WORKFLOW PARAMETERS
     dataset_name = luigi.Parameter(default='mm_test_small')
+    run_id = luigi.Parameter()
     replicate_id = luigi.Parameter(default=None)
     replicate_ids = luigi.Parameter(default=None)
     sampling_seed = luigi.Parameter(default=None)
@@ -84,9 +85,14 @@ class MMWorkflow(sl.WorkflowTask):
                         ))
                 gen_sign_filter_subst.in_smiles = existing_smiles.out_smiles
                 # --------------------------------------------------------------------------------
+                create_unique_run_copy = self.new_task('create_unique_sign_copy_%s' % self.run_id,
+                        CreateRunCopy,
+                        run_id = self.run_id)
+                create_unique_run_copy.in_file = gen_sign_filter_subst.out_signatures
+                # --------------------------------------------------------------------------------
                 create_unique_sign_copy = self.new_task('create_unique_sign_copy_%s' % replicate_id, CreateReplicateCopy,
                         replicate_id = replicate_id)
-                create_unique_sign_copy.in_file = gen_sign_filter_subst.out_signatures
+                create_unique_sign_copy.in_file = create_unique_run_copy.out_copy
                 # --------------------------------------------------------------------------------
                 sample_train_and_test = self.new_task('sample_trn%s_tst%s_c%s_%s' % (train_size, self.test_size, self.lin_cost, replicate_id), SampleTrainAndTest,
                         seed = self.sampling_seed,
@@ -230,7 +236,7 @@ class MMWorkflow(sl.WorkflowTask):
                             ))
                     train_model.in_traindata = ungzip_traindata.out_ungzipped
                     # ------------------------------------------------------------------------
-                    predict = self.new_task('predict_svm_trn%s_tst%s_g%s_c%s_%s' % (train_size, self.test_size, self.svm_gamma, self.svm_cost, replicate_id), 
+                    predict = self.new_task('predict_svm_trn%s_tst%s_g%s_c%s_%s' % (train_size, self.test_size, self.svm_gamma, self.svm_cost, replicate_id),
                             PredictSVMModel,
                             dataset_name = self.dataset_name,
                             replicate_id = replicate_id,

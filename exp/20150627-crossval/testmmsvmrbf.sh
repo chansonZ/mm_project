@@ -6,6 +6,7 @@
 #SBATCH -J MM_SVMRBF_WF
 python wfmm.py MMWorkflow \
     --dataset-name=mm_test \
+    --run-id=test_mmsvmrbf_$(date +%Y%m%d_%H%M%S) \
     --replicate-ids=r1,r2,r3 \
     --sampling-method=random \
     --train-method=svmrbf \
