@@ -11,7 +11,7 @@ python wfmm.py MMWorkflow \
     --train-method=liblinear \
     --train-size=3000 \
     --test-size=1000 \
-    --lin-type=0 \
+    --lin-type=12 \
     --lin-cost=0.01 \
     --slurm-project=b2013262 \
     --runmode=local \
