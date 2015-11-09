@@ -29,11 +29,6 @@ class MMWorkflow(sl.WorkflowTask):
     lin_type = luigi.Parameter('12')
     lin_cost = luigi.Parameter(None)
 
-    # svm_gamma = '0.001',
-    # svm_cost = '100',
-    # svm_type = '3',
-    # svm_kernel_type = '2',
-
     svm_gamma = luigi.Parameter(default='0.001')
     svm_cost = luigi.Parameter(default='100')
     svm_type = luigi.Parameter(default='3')
