@@ -6,6 +6,7 @@
 #SBATCH -J MMLinWorkflow
 python wfmm.py MMWorkflow \
     --dataset-name=acd_logd \
+    --run-id=acdlogd_liblin_$(date +%Y%m%d_%H%M%S) \
     --sampling-method=random \
     --test-size=50000 \
     --train-size=10000 \

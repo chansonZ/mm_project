@@ -13,6 +13,7 @@ export PATH=$projbin:$PATH
 
 python wfmm.py MMWorkflow \
     --dataset-name=solubility \
+    --run-id=solubility_svmrbf_$(date +%Y%m%d_%H%M%S) \
     --sampling-method=random \
     --replicate-ids=r1,r2,r3 \
     --train-sizes=100,1000,5000,10000,20000,rest \

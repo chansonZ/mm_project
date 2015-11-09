@@ -20,4 +20,4 @@ python wfmm.py MMWorkflow \
     --svm-kernel-type=2 \
     --slurm-project=b2013262 \
     --runmode=local \
-    --workers 1
+    --workers 8

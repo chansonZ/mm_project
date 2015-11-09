@@ -6,6 +6,7 @@
 #SBATCH -J MMLinWorkflow
 python wfmm.py MMWorkflow \
     --dataset-name=mm_test \
+    --run-id=test_mmliblin_$(date +%Y%m%d_%H%M%S) \
     --replicate-id=r1 \
     --sampling-method=random \
     --train-method=liblinear \
@@ -15,4 +16,4 @@ python wfmm.py MMWorkflow \
     --lin-cost=0.01 \
     --slurm-project=b2013262 \
     --runmode=local \
-    --workers 2
+    --workers 4
