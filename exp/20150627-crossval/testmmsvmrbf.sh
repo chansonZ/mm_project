@@ -3,8 +3,8 @@
 #SBATCH -p core
 #SBATCH -n 2
 #SBATCH -t 4-00:00:00
-#SBATCH -J MMLinWorkflow
-python wfmmlin.py MMLinear \
+#SBATCH -J MM_SVMRBF_WF
+python wfmm.py MMWorkflow \
     --dataset-name=mm_test \
     --replicate-id=r1 \
     --sampling-method=random \

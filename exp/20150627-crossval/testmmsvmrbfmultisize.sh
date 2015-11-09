@@ -3,16 +3,20 @@
 #SBATCH -p core
 #SBATCH -n 2
 #SBATCH -t 4-00:00:00
-#SBATCH -J MMLinWorkflow
+#SBATCH -J MM_SVMRBF_WF
 python wfmm.py MMWorkflow \
     --dataset-name=mm_test \
     --replicate-id=r1 \
     --sampling-method=random \
-    --train-method=liblinear \
-    --train-size=3000 \
+    --train-method=svmrbf \
+    --train-sizes=1000,2000,3000 \
     --test-size=1000 \
-    --lin-type=0 \
+    --lin-type=12 \
     --lin-cost=0.01 \
+    --svm-gamma=0.001 \
+    --svm-cost=100 \
+    --svm-type=3 \
+    --svm-kernel-type=2 \
     --slurm-project=b2013262 \
     --runmode=local \
     --workers 2

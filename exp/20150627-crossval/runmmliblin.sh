@@ -4,11 +4,12 @@
 #SBATCH -n 2
 #SBATCH -t 4-00:00:00
 #SBATCH -J MMLinWorkflow
-python wfmmlin.py MMLinear \
+python wfmm.py MMWorkflow \
     --dataset-name=acd_logd \
     --sampling-method=random \
     --test-size=50000 \
     --train-size=10000 \
+    --train-method=liblinear \
     --lin-type=12 \
     --slurm-project=b2013262 \
     --runmode=hpc \
