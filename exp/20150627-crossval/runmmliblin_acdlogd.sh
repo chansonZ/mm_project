@@ -8,10 +8,10 @@ python wfmm.py MMWorkflow \
     --dataset-name=acd_logd \
     --run-id=acdlogd_liblin_$(date +%Y%m%d_%H%M%S) \
     --sampling-method=random \
-    --test-size=50000 \
-    --train-size=10000 \
     --train-method=liblinear \
+    --train-sizes=100,1000,5000,10000,20000,rest \
+    --test-size=50000 \
     --lin-type=12 \
     --slurm-project=b2013262 \
-    --runmode=hpc \
-    --workers=2
+    --runmode=local \
+    --workers=16
