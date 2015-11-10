@@ -49,7 +49,7 @@ class MMWorkflow(sl.WorkflowTask):
         else:
             raise Exception('Runmode is none of local, hpc, nor mpi. Please fix and try again!')
 
-        return_tasks = []
+        datareport_rows = []
 
         if self.replicate_id is not None:
             replicate_ids = [self.replicate_id]
@@ -212,7 +212,8 @@ class MMWorkflow(sl.WorkflowTask):
                 # ========================================================================
                 elif self.train_method == TRAINMETHOD_SVMRBF:
                 # ========================================================================
-                    train_model = self.new_task('train_svm_trn%s_tst%s_g%s_c%s_%s' % (train_size, self.test_size, self.svm_gamma, self.svm_cost, replicate_id), TrainSVMModel,
+                    train_model = self.new_task('train_svm_trn%s_tst%s_g%s_c%s_%s' % (train_size, self.test_size, self.svm_gamma, self.svm_cost, replicate_id), 
+                            TrainSVMModel,
                             replicate_id = replicate_id,
                             dataset_name = self.dataset_name,
                             train_size = train_size,
@@ -270,8 +271,33 @@ class MMWorkflow(sl.WorkflowTask):
                 assess_model.in_prediction = predict.out_prediction
                 assess_model.in_model = ungzip_traindata.out_ungzipped
                 assess_model.in_sparse_testdata = ungzip_testdata.out_ungzipped
-                return_tasks.append(assess_model)
-        return return_tasks
+                # ------------------------------------------------------------------------
+                collect_datarow = self.new_task('collect_datarow_svmrbf_%s_trn%s_tst%s_%s' % (self.dataset_name, train_size, self.test_size, replicate_id),
+                        CollectDataReportRow,
+                        dataset_name = self.dataset_name,
+                        train_method = self.train_method,
+                        train_size = train_size,
+                        replicate_id = replicate_id,
+                        lin_cost = self.lin_cost,
+                        slurminfo = sl.SlurmInfo(
+                            runmode=runmode,
+                            project=self.slurm_project,
+                            partition='core',
+                            cores='1',
+                            time='15:00',
+                            jobname='datarow_svmrbf_%s_trn%s_tst%s_%s' % (self.dataset_name, train_size, self.test_size, replicate_id),
+                            threads='1'
+                        ))
+                collect_datarow.in_rmsd = assess_model.out_assessment
+                collect_datarow.in_traintime = train_model.out_traintime
+                # ------------------------------------------------------------------------
+                datareport_rows.append(collect_datarow)
+        datareport = self.new_task('datareport_%s_%s' % (self.dataset_name, self.train_method),
+                CollectDataReport,
+                dataset_name = self.dataset_name,
+                train_method = self.train_method)
+        datareport.in_datareport_rows = [dr.out_datareport_row for dr in datareport_rows]
+        return datareport
 
 # ====================================================================================================
 
