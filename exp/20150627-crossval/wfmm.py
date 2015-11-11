@@ -224,11 +224,11 @@ class MMWorkflow(sl.WorkflowTask):
                             slurminfo = sl.SlurmInfo(
                                 runmode=runmode,
                                 project=self.slurm_project,
-                                partition='core',
-                                cores='1',
+                                partition='node',
+                                cores='64',
                                 time='4-00:00:00',
                                 jobname='trainsvm_tr%s_ts%s_g%s_c%s' % (train_size, self.test_size, self.svm_gamma, self.svm_cost),
-                                threads='1'
+                                threads='16'
                             ))
                     train_model.in_traindata = ungzip_traindata.out_ungzipped
                     # ------------------------------------------------------------------------
