@@ -80,7 +80,7 @@ class MMWorkflow(sl.WorkflowTask):
                         ))
                 gen_sign_filter_subst.in_smiles = existing_smiles.out_smiles
                 # --------------------------------------------------------------------------------
-                create_unique_run_copy = self.new_task('create_unique_sign_copy_%s' % self.run_id,
+                create_unique_run_copy = self.new_task('create_unique_run_copy_%s' % self.run_id,
                         CreateRunCopy,
                         run_id = self.run_id)
                 create_unique_run_copy.in_file = gen_sign_filter_subst.out_signatures

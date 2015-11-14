@@ -17,6 +17,9 @@ class CrossValidate(sl.WorkflowTask):
 
     # PARAMETERS
     dataset_name = luigi.Parameter()
+    run_id = luigi.Parameter()
+    replicate_id = luigi.Parameter(default=None)
+    replicate_ids = luigi.Parameter(default=None)
     folds_count = luigi.IntParameter()
     min_height = luigi.Parameter()
     max_height = luigi.Parameter()
@@ -44,7 +47,11 @@ class CrossValidate(sl.WorkflowTask):
         tasks = {}
         lowest_rmsds = []
         mainwfruns = []
-        for replicate_id in ['r1', 'r2', 'r3']:
+        if self.replicate_id is not None:
+            replicate_ids = [self.replicate_id]
+        else:
+            replicate_ids = [i for i in self.replicate_ids.split(',')]
+        for replicate_id in replicate_ids:
             tasks[replicate_id] = {}
             gensign = self.new_task('gensign_%s' % replicate_id, GenerateSignaturesFilterSubstances,
                     replicate_id=replicate_id,
@@ -61,9 +68,15 @@ class CrossValidate(sl.WorkflowTask):
                     ))
             gensign.in_smiles = mmtestdata.out_smiles
             # ----------------------------------------------------------------
+            create_unique_run_copy = self.new_task('create_unique_run_copy_%s' % self.run_id,
+                    CreateRunCopy,
+                    run_id = self.run_id)
+            create_unique_run_copy.in_file = gensign.out_signatures
+            # ----------------------------------------------------------------
             replcopy = self.new_task('replcopy_%s' % replicate_id, CreateReplicateCopy,
                     replicate_id=replicate_id)
-            replcopy.in_file = gensign.out_signatures
+            replcopy.in_file = create_unique_run_copy.out_copy
+            # ----------------------------------------------------------------
             for train_size in [i for i in self.train_sizes.split(',')]:
                 samplett = self.new_task('sampletraintest_%s_%s' % (train_size, replicate_id), SampleTrainAndTest,
                         replicate_id=replicate_id,
@@ -232,16 +245,19 @@ class CrossValidate(sl.WorkflowTask):
                 sel_lowest_rmsd = self.new_task('select_lowest_rmsd_%s_%s' % (train_size, replicate_id), SelectLowestRMSD)
                 sel_lowest_rmsd.in_values = [average_rmsd.out_rmsdavg for average_rmsd in avgrmsd_tasks.values()]
 
+                run_id = 'mainwfrun_liblinear_%s_tst%s_trn%s_%s' % (self.dataset_name, self.test_size, train_size, replicate_id)
                 mainwfrun = self.new_task('mainwfrun_%s_%s' % (train_size, replicate_id), MainWorkflowRunner,
                         dataset_name=self.dataset_name,
+                        run_id=run_id,
+                        replicate_id=replicate_id,
                         sampling_seed='123',
                         sampling_method='random',
-                        test_size=self.test_size,
+                        train_method='liblinear',
                         train_size=train_size,
+                        test_size=self.test_size,
                         lin_type=self.lin_type,
                         slurm_project=self.slurm_project,
                         parallel_lin_train=False,
-                        replicate_id=replicate_id,
                         runmode=self.runmode)
                 mainwfrun.in_lowestrmsd = sel_lowest_rmsd.out_lowest
 
@@ -257,14 +273,16 @@ class CrossValidate(sl.WorkflowTask):
 class MainWorkflowRunner(sl.Task):
     # Parameters
     dataset_name = luigi.Parameter()
+    run_id = luigi.Parameter()
+    replicate_id =luigi.Parameter()
     sampling_seed = luigi.Parameter()
     sampling_method = luigi.Parameter()
-    test_size = luigi.Parameter()
+    train_method = luigi.Parameter()
     train_size = luigi.Parameter()
+    test_size = luigi.Parameter()
     lin_type = luigi.Parameter()
     slurm_project = luigi.Parameter()
     parallel_lin_train = luigi.BooleanParameter()
-    replicate_id =luigi.Parameter()
     runmode = luigi.Parameter()
     # In-ports
     in_lowestrmsd = None
@@ -276,16 +294,18 @@ class MainWorkflowRunner(sl.Task):
         with self.in_lowestrmsd().open() as infile:
             records = sl.recordfile_to_dict(infile)
             lowest_cost = records['lowest_cost']
-        self.ex('python wfmmlin.py MMLinear' +
+        self.ex('python wfmm.py MMWorkflow' +
                 ' --dataset-name=%s' % self.dataset_name +
+                ' --run-id=%s' % self.run_id +
+                ' --replicate-id=%s' % self.replicate_id +
                 ' --sampling-seed=%s' % self.sampling_seed +
                 ' --sampling-method=%s' % self.sampling_method +
-                ' --test-size=%s' % self.test_size +
+                ' --train-method=%s' % self.train_method +
                 ' --train-size=%s' % self.train_size +
+                ' --test-size=%s' % self.test_size +
                 ' --lin-type=%s' % self.lin_type +
                 ' --lin-cost=%s' % lowest_cost +
                 ' --slurm-project=%s' % self.slurm_project +
-                ' --replicate-id=%s' % self.replicate_id +
                 ' --runmode=%s' % self.runmode)
         with self.out_done().open('w') as donefile:
             donefile.write('Done!\n')
