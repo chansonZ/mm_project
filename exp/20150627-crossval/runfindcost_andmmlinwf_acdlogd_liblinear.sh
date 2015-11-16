@@ -14,10 +14,11 @@ export PATH=$projbin:$PATH
 python wffindcost.py \
     CrossValidate \
     --dataset-name=acd_logd \
+    --run-id='findcost_acd_logd_'$(date +%Y%m%d_%H%M%S) \
+    --replicate-ids=r1,r2,r3 \
     --folds-count=10 \
     --min-height=1 \
     --max-height=3 \
-    --train-method=liblinear \
     --train-sizes="100,1000,5000,10000,20000,80000,160000,320000,rest" \
     --test-size=50000 \
     --randomdatasize-mb=100 \

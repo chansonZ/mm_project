@@ -212,6 +212,15 @@ class MMWorkflow(sl.WorkflowTask):
                 # ========================================================================
                 elif self.train_method == TRAINMETHOD_SVMRBF:
                 # ========================================================================
+                    if self.dataset_name == 'acd_logd':
+                        if train_size == 'rest':
+                            runtime = '10-00:00:00'
+                        elif train_size == '20000':
+                            runtime = '7-00:00:00'
+                        else:
+                            runtime = '4-00:00:00'
+                    else:
+                        runtime = '4-00:00:00'
                     train_model = self.new_task('train_svm_trn%s_tst%s_g%s_c%s_%s' % (train_size, self.test_size, self.svm_gamma, self.svm_cost, replicate_id), 
                             TrainSVMModel,
                             replicate_id = replicate_id,
@@ -226,7 +235,7 @@ class MMWorkflow(sl.WorkflowTask):
                                 project=self.slurm_project,
                                 partition='node',
                                 cores='64',
-                                time='4-00:00:00',
+                                time=runtime,
                                 jobname='trainsvm_tr%s_ts%s_g%s_c%s' % (train_size, self.test_size, self.svm_gamma, self.svm_cost),
                                 threads='16'
                             ))
@@ -272,6 +281,19 @@ class MMWorkflow(sl.WorkflowTask):
                 assess_model.in_model = ungzip_traindata.out_ungzipped
                 assess_model.in_sparse_testdata = ungzip_testdata.out_ungzipped
                 # ------------------------------------------------------------------------
+                count_trainsize_filtered = self.new_task('count_trainsize_filtered_svmrbf_%s_trn%s_tst%s_%s' % (self.dataset_name, train_size, self.test_size, replicate_id),
+                        CountLines,
+                        slurminfo = sl.SlurmInfo(
+                            runmode=runmode,
+                            project=self.slurm_project,
+                            partition='core',
+                            cores='1',
+                            time='15:00',
+                            jobname='count_trainsize_filtered_svmrbf_%s_trn%s_tst%s_%s' % (self.dataset_name, train_size, self.test_size, replicate_id),
+                            threads='1'
+                        ))
+                count_trainsize_filtered.in_file = sample_train_and_test.out_traindata
+                # ------------------------------------------------------------------------
                 collect_datarow = self.new_task('collect_datarow_svmrbf_%s_trn%s_tst%s_%s' % (self.dataset_name, train_size, self.test_size, replicate_id),
                         CollectDataReportRow,
                         dataset_name = self.dataset_name,
@@ -290,6 +312,7 @@ class MMWorkflow(sl.WorkflowTask):
                         ))
                 collect_datarow.in_rmsd = assess_model.out_assessment
                 collect_datarow.in_traintime = train_model.out_traintime
+                collect_datarow.in_trainsize_filtered = count_trainsize_filtered.out_linecount
                 # ------------------------------------------------------------------------
                 datareport_rows.append(collect_datarow)
         datareport = self.new_task('datareport_%s_%s' % (self.dataset_name, self.train_method),
