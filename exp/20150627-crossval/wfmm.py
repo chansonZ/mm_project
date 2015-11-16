@@ -75,7 +75,7 @@ class MMWorkflow(sl.WorkflowTask):
                             partition='core',
                             cores='8',
                             time='1:00:00',
-                            jobname='MMLinGenSign',
+                            jobname='MMGenSign',
                             threads='8'
                         ))
                 gen_sign_filter_subst.in_smiles = existing_smiles.out_smiles
@@ -102,7 +102,7 @@ class MMWorkflow(sl.WorkflowTask):
                             partition='core',
                             cores='12',
                             time='1:00:00',
-                            jobname='MMLinSampleTrainTest',
+                            jobname='MMSampleTrainTest',
                             threads='1'
                         ))
                 sample_train_and_test.in_signatures = create_unique_sign_copy.out_copy
@@ -116,7 +116,7 @@ class MMWorkflow(sl.WorkflowTask):
                             partition='node',
                             cores='16',
                             time='1-00:00:00',
-                            jobname='MMLinCreateSparseTrain',
+                            jobname='MMCreateSparseTrain',
                             threads='16'
                         ))
                 create_sparse_train_dataset.in_traindata = sample_train_and_test.out_traindata
