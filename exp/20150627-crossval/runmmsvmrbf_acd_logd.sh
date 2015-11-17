@@ -1,5 +1,5 @@
 #!/bin/bash -l
-#SBATCH -A b2013262
+#SBATCH -A b2015001
 #SBATCH -p core
 #SBATCH -n 8
 #SBATCH -t 10-00:00:00
@@ -16,9 +16,9 @@ python wfmm.py MMWorkflow \
     --run-id=mainwfrun_acd_logd_20151115_013855 \
     --sampling-method=random \
     --replicate-ids=r1,r2,r3 \
-    --train-sizes=100,1000,5000,10000,20000,rest \
+    --train-sizes=100,1000,5000,10000,20000,80000,160000,320000,rest \
     --train-method=svmrbf \
     --test-size=50000 \
-    --slurm-project=b2013262 \
+    --slurm-project=b2015001 \
     --runmode=hpc \
-    --workers=1
+    --workers=27
