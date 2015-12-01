@@ -283,6 +283,7 @@ class MMWorkflow(sl.WorkflowTask):
                 # ------------------------------------------------------------------------
                 count_trainsize_filtered = self.new_task('count_trainsize_filtered_svmrbf_%s_trn%s_tst%s_%s' % (self.dataset_name, train_size, self.test_size, replicate_id),
                         CountLines,
+                        ungzip=True,
                         slurminfo = sl.SlurmInfo(
                             runmode=runmode,
                             project=self.slurm_project,
