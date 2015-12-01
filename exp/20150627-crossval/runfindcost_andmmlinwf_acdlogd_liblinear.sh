@@ -1,5 +1,5 @@
 #!/bin/bash -l
-#SBATCH -A b2013262
+#SBATCH -A b2015001
 #SBATCH -p core
 #SBATCH -n 16
 #SBATCH -t 4-00:00:00
@@ -23,5 +23,5 @@ python wffindcost.py \
     --train-sizes="100,1000,5000,10000,20000,80000,160000,320000,rest" \
     --test-size=50000 \
     --randomdatasize-mb=100 \
-    --workers=8 \
+    --workers=18 \
     --runmode=local

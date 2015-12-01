@@ -13,7 +13,7 @@ export PATH=$projbin:$PATH
 
 python wfmm.py MMWorkflow \
     --dataset-name=solubility \
-    --run-id=solubility_svmrbf_20151110_001640 \
+    --run-id=solubility_svmrbf_20151110_212223 \
     --sampling-method=random \
     --replicate-ids=r1,r2,r3 \
     --train-sizes=100,1000,5000,10000,20000,rest \
@@ -21,4 +21,4 @@ python wfmm.py MMWorkflow \
     --test-size=5000 \
     --slurm-project=b2013262 \
     --runmode=local \
-    --workers=1
+    --workers=8

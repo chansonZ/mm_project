@@ -1,7 +1,7 @@
 #!/bin/bash -l
-#SBATCH -A b2013262
+#SBATCH -A b2015001
 #SBATCH -p core
-#SBATCH -n 16
+#SBATCH -n 8
 #SBATCH -t 4-00:00:00
 #SBATCH -J MMFindCostSolubility
 
@@ -23,5 +23,5 @@ python wffindcost.py \
     --train-sizes='100,1000,5000,10000,20000,rest' \
     --test-size=5000 \
     --randomdatasize-mb=100 \
-    --workers=8 \
+    --workers=12 \
     --runmode=local
