@@ -19,7 +19,6 @@ class MMWorkflow(sl.WorkflowTask):
     run_id = luigi.Parameter()
     replicate_id = luigi.Parameter(default=None)
     replicate_ids = luigi.Parameter(default=None)
-    sampling_seed = luigi.Parameter(default=None)
     sampling_method = luigi.Parameter()
     train_method = luigi.Parameter() # TRAINMETHOD_LIBLINEAR or TRAINMETHOD_SVMRBF
     train_size = luigi.Parameter(default=None)
@@ -90,7 +89,6 @@ class MMWorkflow(sl.WorkflowTask):
                 create_unique_sign_copy.in_file = create_unique_run_copy.out_copy
                 # --------------------------------------------------------------------------------
                 sample_train_and_test = self.new_task('sample_trn%s_tst%s_c%s_%s' % (train_size, self.test_size, self.lin_cost, replicate_id), SampleTrainAndTest,
-                        seed = self.sampling_seed,
                         test_size = self.test_size,
                         train_size = train_size,
                         sampling_method = self.sampling_method,

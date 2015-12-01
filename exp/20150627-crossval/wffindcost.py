@@ -81,7 +81,6 @@ class CrossValidate(sl.WorkflowTask):
                 samplett = self.new_task('sampletraintest_%s_%s' % (train_size, replicate_id), SampleTrainAndTest,
                         replicate_id=replicate_id,
                         sampling_method='random',
-                        seed='1',
                         test_size=self.test_size,
                         train_size=train_size,
                         slurminfo = sl.SlurmInfo(
@@ -250,7 +249,6 @@ class CrossValidate(sl.WorkflowTask):
                         dataset_name=self.dataset_name,
                         run_id=run_id,
                         replicate_id=replicate_id,
-                        sampling_seed='123',
                         sampling_method='random',
                         train_method='liblinear',
                         train_size=train_size,
@@ -275,7 +273,6 @@ class MainWorkflowRunner(sl.Task):
     dataset_name = luigi.Parameter()
     run_id = luigi.Parameter()
     replicate_id =luigi.Parameter()
-    sampling_seed = luigi.Parameter()
     sampling_method = luigi.Parameter()
     train_method = luigi.Parameter()
     train_size = luigi.Parameter()
@@ -298,7 +295,6 @@ class MainWorkflowRunner(sl.Task):
                 ' --dataset-name=%s' % self.dataset_name +
                 ' --run-id=%s' % self.run_id +
                 ' --replicate-id=%s' % self.replicate_id +
-                ' --sampling-seed=%s' % self.sampling_seed +
                 ' --sampling-method=%s' % self.sampling_method +
                 ' --train-method=%s' % self.train_method +
                 ' --train-size=%s' % self.train_size +
