@@ -35,6 +35,7 @@ class MMWorkflow(sl.WorkflowTask):
 
     slurm_project = luigi.Parameter()
     parallel_lin_train = luigi.BooleanParameter()
+    parallel_svm_train = luigi.BooleanParameter()
     runmode = luigi.Parameter()
     #folds_count = luigi.Parameter()
 
@@ -228,14 +229,15 @@ class MMWorkflow(sl.WorkflowTask):
                             svm_cost = '100',
                             svm_type = '3',
                             svm_kernel_type = '2',
+                            parallel_train = self.parallel_svm_train,
                             slurminfo = sl.SlurmInfo(
-                                runmode=runmode,
+                                runmode=sl.RUNMODE_MPI,
                                 project=self.slurm_project,
                                 partition='node',
                                 cores='64',
                                 time=runtime,
                                 jobname='trainsvm_tr%s_ts%s_g%s_c%s' % (train_size, self.test_size, self.svm_gamma, self.svm_cost),
-                                threads='16'
+                                threads='64' # Not used!
                             ))
                     train_model.in_traindata = ungzip_traindata.out_ungzipped
                     # ------------------------------------------------------------------------
