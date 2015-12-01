@@ -99,7 +99,7 @@ class MMWorkflow(sl.WorkflowTask):
                             runmode=runmode,
                             project=self.slurm_project,
                             partition='core',
-                            cores='12',
+                            cores='8',
                             time='1:00:00',
                             jobname='MMSampleTrainTest',
                             threads='1'
@@ -113,10 +113,10 @@ class MMWorkflow(sl.WorkflowTask):
                             runmode=runmode,
                             project=self.slurm_project,
                             partition='node',
-                            cores='16',
+                            cores='8',
                             time='1-00:00:00',
                             jobname='MMCreateSparseTrain',
-                            threads='16'
+                            threads='8'
                         ))
                 create_sparse_train_dataset.in_traindata = sample_train_and_test.out_traindata
                 # ------------------------------------------------------------------------
@@ -127,10 +127,10 @@ class MMWorkflow(sl.WorkflowTask):
                             runmode=runmode,
                             project=self.slurm_project,
                             partition='node',
-                            cores='16',
+                            cores='8',
                             time='1-00:00:00',
                             jobname='sparse_trn%s_tst%s_c%s' % (train_size, self.test_size, self.lin_cost),
-                            threads='16'
+                            threads='8'
                         ))
                 create_sparse_test_dataset.in_testdata = sample_train_and_test.out_testdata
                 create_sparse_test_dataset.in_signatures = create_sparse_train_dataset.out_signatures
