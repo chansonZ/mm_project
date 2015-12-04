@@ -32,11 +32,20 @@ class ColoringWorkflow(sl.WorkflowTask):
                     jobname='predict_train',
                     threads='1'
                 ))
-        # ------------------------------------------------------------------------
         predict_train.in_svmmodel = existing_svm_model.out_file
         predict_train.in_sparse_testdata = existing_traindata_ungzipped.out_file
         # ------------------------------------------------------------------------
-        return predict_train
+        select_idx10 = self.new_task('select_idx10',
+                mm.SelectPercentIndexValue,
+                percent_index=10)
+        select_idx10.in_prediction = predict_train.out_prediction
+        # ------------------------------------------------------------------------
+        select_idx90 = self.new_task('select_idx90',
+                mm.SelectPercentIndexValue,
+                percent_index=90)
+        select_idx90.in_prediction = predict_train.out_prediction
+        # ------------------------------------------------------------------------
+        return [select_idx10, select_idx90]
 
 if __name__ == '__main__':
-    sl.run_local()
+    sl.run_local(main_task_cls=ColoringWorkflow)
