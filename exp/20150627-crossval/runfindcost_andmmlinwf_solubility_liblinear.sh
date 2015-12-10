@@ -1,8 +1,8 @@
 #!/bin/bash -l
-#SBATCH -A b2015001
+#SBATCH -A b2013262
 #SBATCH -p core
-#SBATCH -n 8
-#SBATCH -t 4-00:00:00
+#SBATCH -n 4
+#SBATCH -t 10-00:00:00
 #SBATCH -J MMFindCostSolubility
 
 # Get directory path of current directory
@@ -15,7 +15,7 @@ export PATH=$projbin:$PATH
 python wffindcost.py \
     CrossValidate \
     --dataset-name=solubility \
-    --run-id=findcost_solubility_20151115_012621 \
+    --run-id=findcost_solubility_20151210_150000 \
     --replicate-ids=r1,r2,r3 \
     --folds-count=10 \
     --min-height=1 \
@@ -23,5 +23,7 @@ python wffindcost.py \
     --train-sizes='100,1000,5000,10000,20000,rest' \
     --test-size=5000 \
     --randomdatasize-mb=100 \
-    --workers=12 \
-    --runmode=local
+    --workers=64 \
+    --slurm-project=b2013262 \
+    --runmode=hpc
+#    --run-id=findcost_solubility_20151115_012621 \
