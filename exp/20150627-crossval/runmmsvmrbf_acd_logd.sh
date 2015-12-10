@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH -A b2015001
-#SBATCH -p node
+#SBATCH -p core
 #SBATCH -n 4
 #SBATCH -t 10-00:00:00
 #SBATCH -J MMWF_ACDLOGD_SVMRBF
