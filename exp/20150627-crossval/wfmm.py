@@ -51,6 +51,9 @@ class MMWorkflow(sl.WorkflowTask):
 
         datareport_rows = []
 
+        coloring_train_data_task = None
+        coloring_train_task = None
+
         if self.replicate_id is not None:
             replicate_ids = [self.replicate_id]
         elif self.replicate_ids is not None:
@@ -241,6 +244,12 @@ class MMWorkflow(sl.WorkflowTask):
                             ))
                     train_model.in_traindata = ungzip_traindata.out_ungzipped
                     # ------------------------------------------------------------------------
+                    # Save task creating train set for coloring
+                    # ------------------------------------------------------------------------
+                    if train_size == '80000' or train_size == '2048': # The 2048 is used in the test script only!
+                        coloring_train_data_task = ungzip_traindata
+                        coloring_train_task = train_model
+                    # ------------------------------------------------------------------------
                     predict = self.new_task('predict_svm_trn%s_tst%s_g%s_c%s_%s' % (train_size, self.test_size, self.svm_gamma, self.svm_cost, replicate_id),
                             PredictSVMModel,
                             dataset_name = self.dataset_name,
@@ -321,6 +330,41 @@ class MMWorkflow(sl.WorkflowTask):
                 dataset_name = self.dataset_name,
                 train_method = self.train_method)
         datareport.in_datareport_rows = [dr.out_datareport_row for dr in datareport_rows]
+
+        # ========================================================================
+        # START: CALCULATECOLORING INDEX VALUES
+        # ========================================================================
+        predict_train = self.new_task('predict_train',
+                PredictSVMModel,
+                dataset_name = self.dataset_name,
+                replicate_id = replicate_id,
+                slurminfo = sl.SlurmInfo(
+                    runmode=runmode,
+                    project=self.slurm_project,
+                    partition='core',
+                    cores='1',
+                    time='4:00:00',
+                    jobname='predict_train',
+                    threads='1'
+                ))
+        predict_train.in_svmmodel = coloring_train_task.out_model
+        predict_train.in_sparse_testdata = coloring_train_data_task.out_ungzipped
+        # ------------------------------------------------------------------------
+        select_idx10 = self.new_task('select_idx10',
+                SelectPercentIndexValue,
+                percent_index=10)
+        select_idx10.in_prediction = predict_train.out_prediction
+        # ------------------------------------------------------------------------
+        select_idx90 = self.new_task('select_idx90',
+                SelectPercentIndexValue,
+                percent_index=90)
+        select_idx90.in_prediction = predict_train.out_prediction
+        # ------------------------------------------------------------------------
+        # return [select_idx10, select_idx90]
+        # ========================================================================
+        # END: CALCULATECOLORING INDEX VALUES
+        # ========================================================================
+
         return datareport
 
 # ====================================================================================================

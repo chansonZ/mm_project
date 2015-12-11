@@ -13,7 +13,7 @@ python wfmm.py MMWorkflow \
     --replicate-ids=r1 \
     --sampling-method=random \
     --train-method=svmrbf \
-    --train-sizes=2000 \
+    --train-sizes=2048 \
     --test-size=1000 \
     --lin-type=12 \
     --lin-cost=0.01 \
