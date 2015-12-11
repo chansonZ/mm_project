@@ -223,6 +223,10 @@ class MMWorkflow(sl.WorkflowTask):
                             runtime = '4-00:00:00'
                     else:
                         runtime = '4-00:00:00'
+                    if runmode in [sl.RUNMODE_HPC, sl.RUNMODE_MPI]:
+                        runmode_train = sl.RUNMODE_MPI
+                    else:
+                        runmode_train = sl.RUNMODE_LOCAL
                     train_model = self.new_task('train_svm_trn%s_tst%s_g%s_c%s_%s' % (train_size, self.test_size, self.svm_gamma, self.svm_cost, replicate_id), 
                             TrainSVMModel,
                             replicate_id = replicate_id,
@@ -234,7 +238,7 @@ class MMWorkflow(sl.WorkflowTask):
                             svm_kernel_type = '2',
                             parallel_train = self.parallel_svm_train,
                             slurminfo = sl.SlurmInfo(
-                                runmode=sl.RUNMODE_MPI,
+                                runmode=runmode_train,
                                 project=self.slurm_project,
                                 partition='node',
                                 cores='64',
