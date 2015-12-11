@@ -290,6 +290,8 @@ class MMWorkflow(sl.WorkflowTask):
                 # ========================================================================
                 # END: ALTERNATIVE TRAINING METHODS
                 # ========================================================================
+
+
                 assess_model.in_prediction = predict.out_prediction
                 assess_model.in_model = ungzip_traindata.out_ungzipped
                 assess_model.in_sparse_testdata = ungzip_testdata.out_ungzipped
