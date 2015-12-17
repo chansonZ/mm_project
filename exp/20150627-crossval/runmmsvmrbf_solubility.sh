@@ -15,7 +15,7 @@ module load openmpi/default
 
 python wfmm.py MMWorkflow \
     --dataset-name=solubility \
-    --run-id=mmsvmrbf_solubility_20151110_001640 \
+    --run-id=mmsvmrbf_solubility_20151215_133000 \
     --sampling-method=random \
     --replicate-ids=r1,r2,r3 \
     --train-sizes=100,1000,5000,10000,20000,rest \

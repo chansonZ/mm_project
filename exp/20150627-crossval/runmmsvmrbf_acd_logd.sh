@@ -1,9 +1,9 @@
 #!/bin/bash -l
-#SBATCH -A b2015001
+#SBATCH -A b2013262
 #SBATCH -p core
-#SBATCH -n 4
+#SBATCH -n 1
 #SBATCH -t 10-00:00:00
-#SBATCH -J MMWF_ACDLOGD_SVMRBF
+#SBATCH -J MMWF_SVM_ACDLOGD
 
 # Get directory path of current directory
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
@@ -17,10 +17,10 @@ python wfmm.py MMWorkflow \
     --dataset-name=acd_logd \
     --run-id=mmsvmrbf_acdlogd_20151115_013855 \
     --sampling-method=random \
-    --replicate-ids=r1,r2,r3 \
-    --train-sizes=100,1000,5000,10000,20000,80000,160000,320000,rest \
+    --replicate-ids=r3 \
+    --train-sizes=1000 \
     --train-method=svmrbf \
     --test-size=50000 \
-    --slurm-project=b2015001 \
+    --slurm-project=b2013262 \
     --runmode=hpc \
-    --workers=27
+    --workers=1
