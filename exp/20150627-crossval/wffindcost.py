@@ -87,7 +87,7 @@ class CrossValidate(sl.WorkflowTask):
                             runmode=runmode,
                             project='b2013262',
                             partition='core',
-                            cores='12',
+                            cores='2',
                             time='1:00:00',
                             jobname='mmsampletraintest_%s_%s' % (train_size, replicate_id),
                             threads='1'
@@ -99,11 +99,11 @@ class CrossValidate(sl.WorkflowTask):
                         slurminfo = sl.SlurmInfo(
                             runmode=runmode,
                             project=self.slurm_project,
-                            partition='node',
-                            cores='16',
+                            partition='core',
+                            cores='8',
                             time='1-00:00:00', # Took ~16hrs for acd_logd, size: rest(train) - 50000(test)
                             jobname='mmsparsetrain_%s_%s' % (train_size, replicate_id),
-                            threads='16'
+                            threads='8'
                         ))
                 sprstrain.in_traindata = samplett.out_traindata
                 # ----------------------------------------------------------------
