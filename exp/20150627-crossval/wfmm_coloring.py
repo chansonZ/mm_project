@@ -232,10 +232,10 @@ class MMWorkflow(sl.WorkflowTask):
                             replicate_id = replicate_id,
                             dataset_name = self.dataset_name,
                             train_size = train_size,
-                            svm_gamma = '0.001',
-                            svm_cost = '100',
-                            svm_type = '3',
-                            svm_kernel_type = '2',
+                            svm_gamma = self.svm_gamma,
+                            svm_cost = self.svm_cost,
+                            svm_type = self.svm_type,
+                            svm_kernel_type = self.svm_kernel_type,
                             parallel_train = self.parallel_svm_train,
                             slurminfo = sl.SlurmInfo(
                                 runmode=runmode_train,
@@ -337,6 +337,7 @@ class MMWorkflow(sl.WorkflowTask):
                 train_method = self.train_method)
         datareport.in_datareport_rows = [dr.out_datareport_row for dr in datareport_rows]
 
+
         # ========================================================================
         # START: CALCULATECOLORING INDEX VALUES
         # ========================================================================
@@ -370,6 +371,33 @@ class MMWorkflow(sl.WorkflowTask):
         # return [select_idx10, select_idx90]
         # ========================================================================
         # END: CALCULATECOLORING INDEX VALUES
+        # ========================================================================
+
+        # ========================================================================
+        # START: Tasks for creating Bioclipse Plugin
+        # ========================================================================
+        htmlreport = self.new_task('htmlreport_%s_%s' % (self.dataset_name, self.train_method),
+                CreateHtmlReport,
+                dataset_name = self.dataset_name,
+                train_method = self.train_method,
+                train_size = '80000', #TODO: Is it?
+                test_size = self.test_size,
+                svm_gamma = self.svm_gamma,
+                svm_cost = self.svm_cost,
+                svm_type = self.svm_type,
+                svm_kernel_type = self.svm_kernel_type,
+                replicate_id = 'N/A',
+                accounted_project = self.slurm_project)
+        htmlreport.in_signatures = None
+        htmlreport.in_sample_traintest_log = None
+        htmlreport.in_sparse_testdata_log = None
+        htmlreport.in_sparse_traindata_log = None
+        htmlreport.in_traindata = None
+        htmlreport.in_svmmodel = None
+        htmlreport.in_assess_svm_log = None
+        htmlreport.in_assess_svm_plot = None
+        # ========================================================================
+        # END: Tasks for creating Bioclipse Plugin
         # ========================================================================
 
         return datareport
