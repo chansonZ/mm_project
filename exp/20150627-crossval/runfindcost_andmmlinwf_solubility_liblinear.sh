@@ -4,6 +4,8 @@
 #SBATCH -n 8
 #SBATCH -t 10-00:00:00
 #SBATCH -J MMFindCostSolubility
+#SBATCH --mail-type FAIL
+#SBATCH --mail-user samuel.lampa@gmail.com
 
 # Get directory path of current directory
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
