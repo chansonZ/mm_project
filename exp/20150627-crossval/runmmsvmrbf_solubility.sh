@@ -2,7 +2,7 @@
 #SBATCH -A b2015001
 #SBATCH -p node
 #SBATCH -n 4
-#SBATCH -t 4-12:00:00
+#SBATCH -t 10-00:00:00
 #SBATCH -J MMWF_SOLUBILITY_SVMRBF
 
 # Get directory path of current directory

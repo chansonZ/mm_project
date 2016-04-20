@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -A b2013262
 #SBATCH -p core
-#SBATCH -n 4
+#SBATCH -n 8
 #SBATCH -t 10-00:00:00
 #SBATCH -J MMFindCostSolubility
 
